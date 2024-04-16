@@ -10,6 +10,10 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 
 ## Structure of the repository
 
+- code
+- data
+- functions
+
 ## Contributions
 
 Coding: Aurore Maureaud
