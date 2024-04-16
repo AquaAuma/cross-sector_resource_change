@@ -1,4 +1,4 @@
-# cross-sector resource change and impacts for trade and cooperation
+# cross-sector resource change & impacts on trade and cooperation
 
 Repository with analysis on short-term and long-term exposure to resource change across sectors of fisheries, water, and agriculture.
 
