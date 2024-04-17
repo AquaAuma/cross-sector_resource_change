@@ -219,7 +219,7 @@ for(e in 1:nrow(name.models)){
     var_array_abs_r <- raster::brick(aperm(var_array_abs[,,,z], c(2,1,3)), xmn=-180, xmx = 180, ymn=-90, ymx=90)
     var_regions <- as.matrix(exact_extract(var_array_abs_r, regions, "sum"))
     for(i in 1:length(regions_agg)){
-      k <- which(regions$AggCode == regions_agg[i])
+      k <- which(regions$UNION == regions_agg[i])
       if(length(k)==1){var_region[i,,z] <- var_regions[k,]
       } else {var_region[i,,z] <- apply(var_regions[k,], 2, sum, na.rm=T)}
     }
@@ -531,7 +531,7 @@ for(e in 1:length(eco_model)){
       var_array_r <- raster::brick(aperm(var_array, c(2,1,3)), xmn=-180, xmx = 180, ymn=-90, ymx=90)
       var_regions <- as.matrix(exact_extract(var_array_r, regions, "sum"))
       for(r in 1:length(regions_agg)){
-        k <- which(regions$AggCode == regions_agg[r])
+        k <- which(regions$UNION == regions_agg[r])
         if(length(k)==1){var_region[r,] <- var_regions[k,]
         } else {var_region[r,] <- apply(var_regions[k,], 2, sum, na.rm=T)}
       }
@@ -834,7 +834,7 @@ for(e in 1:length(eco_model)){
         var_array_r <- raster::brick(aperm(var_array, c(2,1,3)), xmn=-180, xmx = 180, ymn=-90, ymx=90)
         var_regions <- as.matrix(exact_extract(var_array_r, regions, "sum"))
         for(r in 1:length(regions_agg)){
-          k <- which(regions$AggCode == regions_agg[r])
+          k <- which(regions$UNION == regions_agg[r])
           if(length(k)==1){var_region[r,] <- var_regions[k,]
           } else {var_region[r,] <- apply(var_regions[k,], 2, sum, na.rm=T)}
         }
