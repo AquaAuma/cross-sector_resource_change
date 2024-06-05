@@ -1,20 +1,12 @@
 ---
-title: "shock_detection"
+title: "resource shock detection"
 date: "`r format(Sys.time(), '%B, %Y')`"
 fontsize: 20pt
 output:
   html_document:
-    toc: true
+    toc: false
     toc_depth: '3'
     df_print: paged
-  html_notebook:
-    fig_width: 6
-    fig_height: 4
-    toc: true
-    toc_depth: 3
-    code_folding: null
-    toc_float:
-      collapsed: false
 ---
 
 ```{r setup, include=FALSE}
@@ -33,41 +25,55 @@ library(ggplot2)
 library(sf)
 sf_use_s2(FALSE)
 library(gridExtra)
-
+library(pracma)
+library(zoo)
 ```
 
-## Load dataset
+Input on this methods from: Malin Pinsky, Thomas Frölicher
 
-```{r load data, include = TRUE, echo=T}
+Coding: Aurore Maureaud
+
+## Data
+
+Example data picked for this test: agriculture sector, CROVER crop model, GFDL-ESM4 climate model, SSP585 climate experiment, and 4 agricultural crops: maize, wheat, soybean, rice.
+
+For each method used, the residuals of the method are computed and z-scored, and shocks are identified as crop yields exceeding 2SD from the mean (below -2 and above 2 or the z-scored residuals).
+
+```{r load data, echo=FALSE, message=FALSE, warning=FALSE}
 dat <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/global_time_series_2010-2019_2090-2099.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww",
-         climate_model == "ipsl-cm6a-lr")
+         climate_model == "gfdl-esm4")
 
 sub_dat <- dat %>% 
-  filter(eco_model == "epic-iiasa")
+  filter(eco_model == "crover")
 
 ```
 
-## Detecting year resource shock
+## Detecting annual resource shocks
 
-### Linear model
+### Detrending with linear models
 
-Most straightforward but does not work well for non-linear trends (which is most cases in long-term data from ISIMIP).
+This method is most straightforward used in [Fredston et al., 2023](<https://www.nature.com/articles/s41586-023-06449-y>) but does not work well for non-linear trends (which is most cases in long-term data from ISIMIP). In the example shown below, on the maize crop data seems to be properly detrended by the linear model. This is also evident from the R-square of the model (95% for maize, and \<50% for other crops).
 
-```{r lm, include = TRUE, echo = TRUE}
+```{r lm, echo=FALSE, message=FALSE, warning=FALSE}
 
-# detrending time-series
-# maize
+crops <- sort(unique(sub_dat$output_variable))
+
+for(c in 1:length(crops)){
+  # subset data
   xx <- sub_dat %>% 
-    filter(output_variable=="maize")
-  lmd <- lm(xx$percent_diff ~ xx$years)
-  summary(lmd)
+    filter(output_variable==crops[c])
   
-# residuals from linear model
-xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
+  # linear model
+  lmd <- lm(xx$percent_diff ~ xx$years)
+  
+  # residuals from linear model
+  xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
 
-plot_maize <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  # plot model residuals and shocks
+  assign(paste0("plot_",crops[c]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line() + 
   geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
   geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
   vjust = -0.1, hjust = -0.1, size = 2) +
@@ -76,75 +82,277 @@ plot_maize <- ggplot(xx, aes(x = years, y = res)) + geom_line() +
   theme_bw() +
   ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
   xlab("Years") + ylab("z-score of residuals") +
-  theme(text = element_text(size = 10))
+  theme(text = element_text(size = 10)))
+  
+}
 
-# wheat
-xx <- sub_dat %>% 
-  filter(output_variable=="wheat")
-lmd <- lm(xx$percent_diff ~ xx$years)
-summary(lmd)
-
-# residuals from linear model
-xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
-
-plot_wheat <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
-  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
-  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
-  vjust = -0.1, hjust = -0.1, size = 2) +
-  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
-  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
-  theme_bw() +
-  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
-  xlab("Years") + ylab("z-score of residuals") +
-  theme(text = element_text(size = 10))
-
-# soybean
-xx <- sub_dat %>% 
-  filter(output_variable=="soybean")
-lmd <- lm(xx$percent_diff ~ xx$years)
-summary(lmd)
-
-# residuals from linear model
-xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
-
-plot_soybean <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
-  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
-  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
-  vjust = -0.1, hjust = -0.1, size = 2) +
-  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
-  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
-  theme_bw() +
-  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
-  xlab("Years") + ylab("z-score of residuals") +
-  theme(text = element_text(size = 10))
-
-# rice
-xx <- sub_dat %>% 
-  filter(output_variable=="rice")
-lmd <- lm(xx$percent_diff ~ xx$years)
-summary(lmd)
-
-# residuals from linear model
-xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
-
-plot_rice <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
-  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
-  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",vjust = -0.1, hjust = -0.1, size = 2) +
-  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
-  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
-  theme_bw() +
-  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
-  xlab("Years") + ylab("z-score of residuals") +
-  theme(text = element_text(size = 10))
-
-
-grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,
-             nrow = 2)
-
+grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,nrow = 2)
 ```
 
-### 31-year moving average
+### 31-year moving average				
 
-Method advised by Thomas Frölicher.
+A 31-year average works well but it might not apply to the entire time-series of the dataset. The rolling window of 31 is chosen as it eliminates most of the interannual (e.g., ENSO, NAO, etc) and decadal variability (PDO) in the climate/ocean system (it is also often used in IPCC assessments).
 
-### Spline/smoothers
+The rollmean() function from the \`zoo\` R package is used, where the k rolling window parameter needs to be chosen.
+
+```{r movingaverage, echo=FALSE, message=FALSE, warning=FALSE}
+
+crops <- sort(unique(sub_dat$output_variable))
+
+for(c in 1:length(crops)){
+  # subset data
+  xx <- sub_dat %>% 
+    filter(output_variable==crops[c])
+  
+  # linear model
+  running <- rollmean(xx$percent_diff, k = 31)
+
+  # residuals from rolling mean
+  res <- xx$percent_diff[16:102]-running
+  xx$res <- NA
+  xx$res[16:102] <- (res-mean(res))/sd(res)
+
+  # plot model residuals and shocks
+  assign(paste0("plot_",crops[c]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+  
+}
+
+grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,nrow = 2)
+```
+
+An extrapolation of the time-series could be considered, as done in a previous [publication](<https://doi.org/10.5194/egusphere-2024-488>): "The past anthropogenic warming is here estimated by applying a 31-year running mean with a linear extrapolation for the last 15 years, assuming constant warming rate based on the last 31 years."
+
+### Savitsky-Golay
+
+A Savitsky-Golay low-pass filter (e.g., as in [this paper](<https://doi.org/10.1016/j.sigpro.2005.02.002>)) can detrend the data to isolate shocks.
+
+-   See brief description of low-pass filters [here](<https://se.mathworks.com/discovery/low-pass-filter.html>).
+
+```{=html}
+<!-- -->
+```
+-   See brief description of Savitsky-Golay filters [here](<https://se.mathworks.com/help/signal/ref/sgolayfilt.html>).
+
+The savgol() function from the \`pracma\` R package is used, where the derivative order parameter *dorder* is set to 0 for smoothing, the filter order parameter *forder* is set to 4 for a quartic filter, and the filter length parameter *fl* is set at 11.
+
+```{r savitskygolay, echo=FALSE, message=FALSE, warning=FALSE}
+crops <- sort(unique(sub_dat$output_variable))
+
+for(c in 1:length(crops)){
+  # subset data
+  xx <- sub_dat %>% 
+    filter(output_variable==crops[c])
+  
+  # savistky-golay with 
+    low_pass <- savgol(xx$percent_diff, 11, 
+                       dorder = 0, forder = 4)
+      
+    # plot(xx$percent_diff ~ xx$years, col = "grey")
+    # lines(low_pass ~ xx$years)
+    
+    low_pass_res <- xx$percent_diff-low_pass
+    xx$res <- (low_pass_res-mean(low_pass_res))/(sd(low_pass_res))
+
+  # plot model residuals and shocks
+  assign(paste0("plot_",crops[c]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+  
+}
+
+grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,nrow = 2)
+```
+
+#### Sensitivity to filter length
+
+Filter order is set at 11.
+
+```{r filterspan, echo=FALSE, warning=FALSE, message=FALSE}
+xx <- sub_dat %>% 
+  filter(output_variable=="maize")
+
+spans <- c(7, 9, 11, 15)
+for(s in 1:length(spans)){
+  
+  # savistky-golay with 
+    low_pass <- savgol(xx$percent_diff, fl = spans[s], 
+                       dorder = 0, forder = 4)
+    
+    low_pass_res <- xx$percent_diff-low_pass
+    xx$res <- (low_pass_res-mean(low_pass_res))/(sd(low_pass_res))
+  
+    # plot model residuals and shocks
+  assign(paste0("plot_",spans[s]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line(col = "grey80") + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "grey20") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "grey20",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  span=",spans[s])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+}
+
+grid.arrange(plot_7, plot_9, plot_11, plot_15,nrow = 2)
+```
+
+#### Sensitivity to the filter order and length
+
+Filter is either quadratic (2), or quartic (4), and filter length is either set a 7 or 11.
+
+```{r filterorder, echo=FALSE, warning=FALSE, message=FALSE}
+xx <- sub_dat %>% 
+  filter(output_variable=="maize")
+
+orders <- c(2,4)
+spans <- c(7,11)
+for(o in 1:length(orders)){
+  for(s in 1:length(spans)){
+  
+  # savistky-golay with 
+    low_pass <- savgol(xx$percent_diff, fl = spans[s], 
+                       dorder = 0, forder = orders[o])
+    
+    low_pass_res <- xx$percent_diff-low_pass
+    xx$res <- (low_pass_res-mean(low_pass_res))/(sd(low_pass_res))
+  
+    # plot model residuals and shocks
+  assign(paste0("plot_",orders[o],"_",spans[s]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line(col = "grey50") + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "grey20") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "grey20",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  order=",orders[o]," span=",spans[s])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+  }
+}
+
+grid.arrange(plot_2_7, plot_2_11, plot_4_7, plot_4_11,ncol =2)
+```
+
+### Smoother across crops
+
+The loess() function from the \`stats\` R package is used, where the parmeter controlling the degree of smoothing *span* is set at 2.
+
+```{r smooth, echo=FALSE, message=FALSE, warning=FALSE}
+
+crops <- sort(unique(sub_dat$output_variable))
+
+for(c in 1:length(crops)){
+  # subset data
+  xx <- sub_dat %>% 
+    filter(output_variable==crops[c])
+  
+  # loess with span = 1
+    model_smooth <- loess(xx$percent_diff ~ xx$years, span =1)
+  xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+  
+  # plot model residuals and shocks
+  assign(paste0("plot_",crops[c]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+  
+}
+
+grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,nrow = 2)
+```
+
+#### Sensitivity to smoother span
+
+Testing the sensitivity of the shock detection to the smoother span, we can see that for the maize model example, we detect 5, 6, or 7 shocks for a span from 0.5 to 1.5.
+
+```{r smoothspan, echo=FALSE, message=FALSE, warning=FALSE}
+xx <- sub_dat %>% 
+  filter(output_variable=="maize")
+
+spans <- c(0.5, 0.75, 1, 1.5)
+for(s in 1:length(spans)){
+ 
+  # loess with span s
+    model_smooth <- loess(xx$percent_diff ~ xx$years, span =spans[s])
+  xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+  
+    # plot model residuals and shocks
+  assign(paste0("plot_",spans[s]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line(col = "grey80") + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "grey20") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "grey20",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  span=",spans[s])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+}
+
+grid.arrange(plot_0.5, plot_0.75, plot_1, plot_1.5,nrow = 2)
+```
+
+#### Sensitivity to smoother span and degree
+
+Sensitivity to the smoother span and polynomial degree.
+
+```{r smoothspandegree, echo=FALSE, message=FALSE, warning=FALSE}
+
+xx <- sub_dat %>% 
+  filter(output_variable=="maize")
+
+spans <- c(0.75, 1.5)
+degrees <- c(1,2)
+for(s in 1:length(spans)){
+  for(d in 1:length(degrees)){
+ 
+  # loess with span s
+    model_smooth <- loess(xx$percent_diff ~ xx$years, span =spans[s], degree = degrees[d])
+  xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+  
+    # plot model residuals and shocks
+  assign(paste0("plot_",spans[s],"_",degrees[d]),
+         ggplot(xx, aes(x = years, y = res)) + geom_line(col = "grey50") + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "grey20") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "grey20",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  span=",spans[s]," degree=",degrees[d])) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10)))
+  }
+}
+
+grid.arrange(plot_0.75_1, plot_0.75_2, plot_1.5_1, plot_1.5_2,nrow = 2)
+```
