@@ -1,0 +1,150 @@
+---
+title: "shock_detection"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: true
+    toc_depth: '3'
+    df_print: paged
+  html_notebook:
+    fig_width: 6
+    fig_height: 4
+    toc: true
+    toc_depth: 3
+    code_folding: null
+    toc_float:
+      collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+
+# load libraries
+library(raster)
+library(ncdf4)
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(sf)
+sf_use_s2(FALSE)
+library(gridExtra)
+
+```
+
+## Load dataset
+
+```{r load data, include = TRUE, echo=T}
+dat <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/global_time_series_2010-2019_2090-2099.csv") %>% 
+  filter(experiment_climate == "ssp585",
+         output_variable != "ptotww",
+         climate_model == "ipsl-cm6a-lr")
+
+sub_dat <- dat %>% 
+  filter(eco_model == "epic-iiasa")
+
+```
+
+## Detecting year resource shock
+
+### Linear model
+
+Most straightforward but does not work well for non-linear trends (which is most cases in long-term data from ISIMIP).
+
+```{r lm, include = TRUE, echo = TRUE}
+
+# detrending time-series
+# maize
+  xx <- sub_dat %>% 
+    filter(output_variable=="maize")
+  lmd <- lm(xx$percent_diff ~ xx$years)
+  summary(lmd)
+  
+# residuals from linear model
+xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
+
+plot_maize <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10))
+
+# wheat
+xx <- sub_dat %>% 
+  filter(output_variable=="wheat")
+lmd <- lm(xx$percent_diff ~ xx$years)
+summary(lmd)
+
+# residuals from linear model
+xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
+
+plot_wheat <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10))
+
+# soybean
+xx <- sub_dat %>% 
+  filter(output_variable=="soybean")
+lmd <- lm(xx$percent_diff ~ xx$years)
+summary(lmd)
+
+# residuals from linear model
+xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
+
+plot_soybean <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",
+  vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10))
+
+# rice
+xx <- sub_dat %>% 
+  filter(output_variable=="rice")
+lmd <- lm(xx$percent_diff ~ xx$years)
+summary(lmd)
+
+# residuals from linear model
+xx$res <- (resid(lmd)-mean(resid(lmd)))/sd(resid(lmd))
+
+plot_rice <- ggplot(xx, aes(x = years, y = res)) + geom_line() + 
+  geom_point(data = xx[(xx$res<(-2) | xx$res>2),], aes(x = years, y = res), col = "red") +
+  geom_text(data = xx[(xx$res<(-2) | xx$res>2),], aes(label = years), col = "red",vjust = -0.1, hjust = -0.1, size = 2) +
+  geom_hline(yintercept = -2, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "grey50") +
+  theme_bw() +
+  ggtitle(paste0(xx$eco_model[1], " ", xx$output_variable[1], "  R2=", round(summary(lmd)$adj.r.squared, 2))) +
+  xlab("Years") + ylab("z-score of residuals") +
+  theme(text = element_text(size = 10))
+
+
+grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,
+             nrow = 2)
+
+```
+
+### 31-year moving average
+
+Method advised by Thomas Frölicher.
+
+### Spline/smoothers
