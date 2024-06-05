@@ -1,5 +1,5 @@
 #### Process ISIMIP data across sectors
-#### Coding: Aurore A. Maureaud, April 2024
+#### Coding: Aurore A. Maureaud, June 2024
 
 # load libraries
 library(raster)
@@ -119,6 +119,16 @@ for(e in 1:nrow(name.models)){
       var_array_abs[,,i,z] <- obs_yield[,,z]+obs_yield[,,z]*var_array[,,i,z]/100
     }
   }
+  
+  # standardize by grid cell size
+  area_i <- t(as.matrix(grid_cells_areas(var_array_abs)))
+  for(a in 1:dim(var_array_abs)[3]){
+    for(b in 1:dim(var_array_abs)[4]){
+      # area_i in km2, so multiple by 1e6 to get m2
+      var_array_abs[,,a,b] <- var_array_abs[,,a,b]*area_i*1e6
+    }
+  }
+  
   var_array_abs <- apply(var_array_abs, c(3,4), sum, na.rm=T)
   
   # average yield around 2015
@@ -213,6 +223,15 @@ for(e in 1:nrow(name.models)){
     }
   }
   
+  # standardize by grid cell size
+  area_i <- t(as.matrix(grid_cells_areas(var_array_abs)))
+  for(a in 1:dim(var_array_abs)[3]){
+    for(b in 1:dim(var_array_abs)[4]){
+      # area_i in km2, so multiple by 1e6 to get m2
+      var_array_abs[,,a,b] <- var_array_abs[,,a,b]*area_i*1e6
+    }
+  }
+  
   # extract crop data per region and get sum by geographical unit
   var_region <- array(data=NA, dim=c(length(regions_agg),dim(var_array_abs)[3],4))
   for(z in 1:4){
@@ -294,7 +313,7 @@ rm(global)
 ################################################################################
 
 # code options
-create_list_files <- FALSE
+create_list_files <- TRUE
 sector <- "marine-fishery_global"
 eco_model <- c("APECOSM","BOATS","DBEM","DBPM","EcoOCean","EcoTroph","FEISTY",
                "MACROECOLOGICAL","ZooMSS")
@@ -335,7 +354,7 @@ for(e in 1:length(eco_model)){
 
 
 #### B. global aggregation ----
-years <- sort(seq(from=1970, to=2100, by=1))
+years <- sort(seq(from=1983, to=2100, by=1))
 time <- c(1:length(years))
 time_f <- data.frame(cbind(time, years)) %>% 
   mutate(time = as.character(time))
@@ -345,8 +364,7 @@ global <- data.frame() %>%
   mutate(eco_model = NA_character_,
          climate_model = NA_character_,
          experiment_climate = NA_character_,
-         percent_diff = NA,
-         log_ratio = NA)
+         percent_diff = NA)
 
 for(e in 1:length(eco_model)){
   
@@ -361,22 +379,33 @@ for(e in 1:length(eco_model)){
                             start_year, end_year, sep = "_")) %>% 
     filter(experiment_human_forcing == "nat",
            experiment_climate %in% c("ssp126", "ssp585", "historical"),
-           output_variable == "tcb")
+           output_variable %in% c("tcb","tcblog10"))
   
   for(i in 1:nrow(name.models)){
+    
+    print(i)
     
     if(name.models$experiment_climate[i]!="historical"){
       # read file
       output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
-      if(output_i$var$tcb$units=="g m-2"){print("Unit ok!")} else {print("Unit to correct")}
       var_array <- ncvar_get(output_i, names(output_i$var))
+      if(length(dim(var_array))==4){
+        if(dim(var_array)[3]==6){var_array2 <- apply(var_array[,,2:6,], c(1,2,4), sum, na.rm=T)}
+        if(dim(var_array)[3]==5){var_array2 <- apply(var_array[,,2:5,], c(1,2,4), sum, na.rm=T)}
+        var_array <- var_array2
+      }
       time_i <- get_times(name.models, i)
       area_i <- t(as.matrix(grid_cells_areas(var_array)))
       # add historical simulations 
-      h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical")
+      h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable == name.models$output_variable[i])
       time_h <- get_times(name.models, h)
       output_i_hist <- nc_open(here(paste0(path, "/", name.models$file.name[h])))
       var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
+      if(length(dim(var_hist))==4){
+        if(dim(var_hist)[3]==6){var_hist2 <- apply(var_hist[,,2:6,], c(1,2,4), sum, na.rm=T)}
+        if(dim(var_hist)[3]==5){var_hist2 <- apply(var_hist[,,2:5,], c(1,2,4), sum, na.rm=T)}
+        var_hist <- var_hist2
+      }
       # select years after 1982
       y <- which(time_h$years>(time_f$years[1]-1))
       var_hist <- var_hist[,,y[1]:dim(var_hist)[3]]
@@ -384,10 +413,6 @@ for(e in 1:length(eco_model)){
       var_array <- abind(var_hist, var_array, along=3)
       time_c <- get_times_combined(name.models, i, start_year = time_f$years[1])
       rm(y, h, time_h, time_i, var_hist, output_i, output_i_hist)
-      
-      # get number of simulated values per year
-      nbr_obs <- apply(var_array, 3, function(x) sum(!is.na(x), na.rm=T))
-      nbr_zero <- apply(var_array, 3, function(x) sum(x==0, na.rm=T))
       
       # standardize by grid cell size
       for(a in 1:dim(var_array)[3]){
@@ -404,12 +429,6 @@ for(e in 1:length(eco_model)){
           group_by(years) %>% 
           summarize(var_array = mean(var_array, na.rm=T))
         var_array <- var_m$var_array
-        nbr_m <- cbind(time_c, nbr_obs, nbr_zero) %>% 
-          group_by(years) %>% 
-          summarize(nbr_obs = mean(nbr_obs, na.rm=T),
-                    nbr_zero = mean(nbr_zero, na.rm=T))
-        nbr_obs <- nbr_m$nbr_obs
-        nbr_zero <- nbr_m$nbr_zero
       }      
       
       # average biomass 2010-2019
@@ -421,30 +440,26 @@ for(e in 1:length(eco_model)){
       
       ## get relative values compared to decadal reference period
       var_array_10y <- 100*((var_array-agg_2010_2019)/agg_2010_2019)
-      var_array_log10y <- log(var_array)-log(agg_2010_2019)
       
       # % difference for end decade
       vec <- data.frame(name.models$eco_model[i], name.models$experiment_climate[i], 
-                        name.models$climate_model[i], mean(var_array_10y[t_2090:t_2099], na.rm=T),
-                        mean(var_array_log10y[t_2090:t_2099], na.rm=T))
+                        name.models$climate_model[i], name.models$output_variable[i],
+                        mean(var_array_10y[t_2090:t_2099], na.rm=T))
       global <- rbind(global, vec)
       
       ## % difference per decade
-      percent_diff_10y <- data.frame(cbind(time_f, var_array_10y, var_array_log10y, nbr_obs, nbr_zero)) %>% 
-        rename(var_pd = var_array_10y,
-               var_logr = var_array_log10y) %>% 
-        # group_by(years) %>%
-        # summarize(var_pd = mean(var_pd),
-        #           var_logr = mean(var_logr)) %>%
+      percent_diff_10y <- data.frame(cbind(time_f, var_array_10y)) %>% 
+        rename(var_pd = var_array_10y) %>% 
         mutate(eco_model = name.models$eco_model[i],
                climate_model = name.models$climate_model[i],
-               experiment_climate = name.models$experiment_climate[i])
+               experiment_climate = name.models$experiment_climate[i],
+               output_variable = name.models$output_variable[i])
       
       if(nrow(yearly_percent_diff)==0){yearly_percent_diff <- percent_diff_10y
       } else {yearly_percent_diff <- rbind(yearly_percent_diff, percent_diff_10y)}
       
-      rm(percent_diff_10y, var_array_10y, var_array_log10y, var_array, t_2010, t_2019, agg_2010_2019, 
-         nbr_obs, nbr_zero, vec, t_2090, t_2099)
+      rm(percent_diff_10y, var_array_10y, var_array, t_2010, t_2019, agg_2010_2019, 
+         vec, t_2090, t_2099)
     }
   }
   
@@ -453,19 +468,17 @@ for(e in 1:length(eco_model)){
 # save the temporal trend data
 yearly_percent_diff <- yearly_percent_diff %>% 
   mutate(spatial_scale = "global",
-         sector = "marine-fishery_global",
-         output_variable = "total consumer biomass") %>%
+         sector = sector) %>%
   rename(percent_diff = var_pd) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
 pct_diff_ts_g_cs <- rbind(pct_diff_ts_g_cs, yearly_percent_diff)
 rm(yearly_percent_diff)
 
 # save the end of the century average data
-names(global)[1:5] <- c("eco_model", "experiment_climate", "climate_model", "percent_diff", "log_ratio")
+names(global)[1:5] <- c("eco_model", "experiment_climate", "climate_model", "output_variable", "percent_diff")
 global <- global %>% 
   mutate(spatial_scale = "global",
-         sector = "marine-fishery_global",
-         output_variable = "total consumer biomass") %>% 
+         sector = sector) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
 pct_diff_avg_g_cs <- rbind(pct_diff_avg_g_cs, global)
 rm(global)
@@ -496,22 +509,32 @@ for(e in 1:length(eco_model)){
                             start_year, end_year, sep = "_")) %>% 
     filter(experiment_human_forcing == "nat",
            experiment_climate %in% c("ssp126", "ssp585", "historical"),
-           output_variable == "tcb")
+           output_variable %in% c("tcb","tcblog10"))
   
   for(i in 1:nrow(name.models)){
     
     if(name.models$experiment_climate[i]!="historical"){
       # read file
       output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
-      if(output_i$var$tcb$units=="g m-2"){print("Unit ok!")} else {print("Unit to correct")}
       var_array <- ncvar_get(output_i, names(output_i$var))
+      # sum up biomass sizes when it's the tcb log10 variable for fish from 10g-100kg
+      if(length(dim(var_array))==4){
+        if(dim(var_array)[3]==6){var_array2 <- apply(var_array[,,2:6,], c(1,2,4), sum, na.rm=T)}
+        if(dim(var_array)[3]==5){var_array2 <- apply(var_array[,,2:5,], c(1,2,4), sum, na.rm=T)}
+        var_array <- var_array2
+      }
       time_i <- get_times(name.models, i)
       area_i <- t(as.matrix(grid_cells_areas(var_array)))
       # add historical simulations 
-      h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical")
+      h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable == name.models$output_variable[i])
       time_h <- get_times(name.models, h)
       output_i_hist <- nc_open(here(paste0(path, "/", name.models$file.name[h])))
       var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
+      if(length(dim(var_hist))==4){
+        if(dim(var_hist)[3]==6){var_hist2 <- apply(var_hist[,,2:6,], c(1,2,4), sum, na.rm=T)}
+        if(dim(var_hist)[3]==5){var_hist2 <- apply(var_hist[,,2:5,], c(1,2,4), sum, na.rm=T)}
+        var_hist <- var_hist2
+      }
       # select years after 1982
       y <- which(time_h$years>1982)
       var_hist <- var_hist[,,y[1]:dim(var_hist)[3]]
@@ -573,37 +596,38 @@ for(e in 1:length(eco_model)){
         pivot_longer(1:length(regions_agg), names_to = "regions", values_to = "percent_diff") %>% 
         mutate(eco_model = name.models$eco_model[i],
                climate_model = name.models$climate_model[i],
-               experiment_climate = name.models$experiment_climate[i])
+               experiment_climate = name.models$experiment_climate[i],
+               output_variable = name.models$output_variable[i])
       
       if(nrow(yearly_percent_diff)==0){yearly_percent_diff <- percent_diff_10y
       } else {yearly_percent_diff <- rbind(yearly_percent_diff, percent_diff_10y)}
       
       # % difference for end decade
-      vec <- data.frame(name.models$eco_model[i], name.models$experiment_climate[i], name.models$climate_model[i], 
+      vec <- data.frame(name.models$eco_model[i], name.models$experiment_climate[i], 
+                        name.models$climate_model[i], name.models$output_variable[i],
                         apply(var_array[t_2090:t_2099,], 2, mean, na.rm=T), regions_agg)
       if(nrow(global)==0){global <- vec} else {global <- rbind(global, vec)}
       
       rm(percent_diff_10y, var_array, t_2010, t_2019, agg_2010_2019, t_2090, t_2099, vec)
     }
   }
+  save.image(file = "data/ag_wa_revised_fi.RData")
 }
 
 ## save data
 # save the temporal trend data
 yearly_percent_diff <- yearly_percent_diff %>% 
   mutate(spatial_scale = "regions",
-         sector = "marine-fishery_global",
-         output_variable = "total consumer biomass") %>% 
+         sector = sector) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
 pct_diff_ts_r_cs <- rbind(pct_diff_ts_r_cs, yearly_percent_diff)
 rm(yearly_percent_diff)
 
 # save the end of the century average data
-names(global)[1:5] <- c("eco_model", "experiment_climate", "climate_model", "percent_diff", "regions")
+names(global)[1:6] <- c("eco_model", "experiment_climate", "climate_model", "output_variable", "percent_diff", "regions")
 global <- global %>% 
   mutate(spatial_scale = "regions",
-         sector = "marine-fishery_global",
-         output_variable = "total consumer biomass") %>% 
+         sector = sector) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
 pct_diff_avg_r_cs <- rbind(pct_diff_avg_r_cs, global)
 rm(global)
@@ -678,7 +702,7 @@ for(e in 1:length(eco_model)){
                             start_year, end_year, sep = "_")) %>% 
     filter(experiment_human_forcing %in% c("2015soc"),
            experiment_climate %in% c("ssp126", "ssp585", "historical"),
-           output_variable %in% c("tws","ptotww"),
+           output_variable %in% c("tws","ptotww","qtot"),
            experiment_sensitivity == "default")
   
   if(nrow(name.models)>0){
@@ -693,18 +717,12 @@ for(e in 1:length(eco_model)){
         var_array <- ncvar_get(output_i, names(output_i$var))
         time_i <- get_times(name.models, i)
         var_array_i <- apply(var_array, 3, sum, na.rm=T)
-        xx_i <- cbind(time_i, var_array_i)
-        plot_future <- ggplot(xx_i, aes(x = as.numeric(time), y = var_array_i)) + geom_line() +
-          xlab("time") + ylab(name.models$output_variable[i]) + ggtitle("future")
         # add historical simulations 
         h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable==name.models$output_variable[i])
         time_h <- get_times(name.models, h)
         output_i_hist <- nc_open(here(paste0(path, "/", name.models$file.name[h])))
         var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
         var_hist_h <- apply(var_hist, 3, sum, na.rm=T)
-        xx_h <- cbind(time_h, var_hist_h)
-        plot_past <- ggplot(xx_h, aes(x = as.numeric(time), y = var_hist_h)) + geom_line()+
-          xlab("time") + ylab(name.models$output_variable[i]) + ggtitle("historical")
         # select years after 1982
         y <- which(time_h$years>1982)
         var_hist <- var_hist[,,y[1]:dim(var_hist)[3]]
@@ -712,9 +730,14 @@ for(e in 1:length(eco_model)){
         var_array <- abind(var_hist, var_array, along=3)
         time_c <- get_times_combined(name.models, i, start_year = 1983)
         var_array_c <- apply(var_array, 3, sum, na.rm=T)
-        xx_c <- cbind(time_c, var_array_c)
         rm(y, h, time_h, time_i, var_hist, output_i, output_i_hist)
-        rm(xx_i, xx_c, xx_h, var_hist_h, var_array_i, var_array_c)
+        rm(var_hist_h, var_array_i, var_array_c)
+        
+        # standardize by grid cell size
+        for(a in 1:dim(var_array)[3]){
+          # area_i in km2, so multiple by 1e6 to get m2
+          var_array[,,a] <- var_array[,,a]*area_i*1e6
+        }
         
         # get global sum or mean per year
         var_array <- apply(var_array, 3, sum, na.rm=T)
@@ -804,7 +827,7 @@ for(e in 1:length(eco_model)){
                             start_year, end_year, sep = "_")) %>% 
     filter(experiment_human_forcing %in% c("2015soc"),
            experiment_climate %in% c("ssp126", "ssp585", "historical"),
-           output_variable %in% c("tws","ptotww"),
+           output_variable %in% c("tws","ptotww","qtot"),
            experiment_sensitivity == "default")
   
   if(nrow(name.models)>0){
@@ -828,6 +851,12 @@ for(e in 1:length(eco_model)){
         var_array <- abind(var_hist, var_array, along=3)
         time_c <- get_times_combined(name.models, i, start_year = 1983)
         rm(y, h, time_h, time_i, var_hist, output_i, output_i_hist)
+        
+        # standardize by grid cell size
+        for(a in 1:dim(var_array)[3]){
+          # area_i in km2, so multiple by 1e6 to get m2
+          var_array[,,a] <- var_array[,,a]*area_i*1e6
+        }
         
         # extract crop data per region and get sum by geographical unit
         var_region <- array(data=NA, dim=c(length(regions_agg),dim(var_array)[3]))
@@ -919,7 +948,10 @@ rm(global)
 #### 4. SAVING CROSS-SECTOR OUTPUTS
 ################################################################################
 
-write.csv(pct_diff_ts_g_cs, file = "data/long-term_change/global_time_series_2010-2019_2090-2099.csv", row.names = F)
-write.csv(pct_diff_avg_g_cs, file = "data/long-term_change/global_average_2010-2019_2090-2099.csv", row.names = F)
-write.csv(pct_diff_ts_r_cs, file = "data/long-term_change/countries_time_series_2010-2019_2090-2099.csv", row.names = F)
-write.csv(pct_diff_avg_r_cs, file = "data/long-term_change/countries_average_2010-2019_2090-2099.csv", row.names = F)
+write.csv(pct_diff_ts_g_cs, file = "data/long-term_change/global_time_series_2010-2019_2090-2099_revised.csv", row.names = F)
+write.csv(pct_diff_avg_g_cs, file = "data/long-term_change/global_average_2010-2019_2090-2099_revised.csv", row.names = F)
+write.csv(pct_diff_ts_r_cs, file = "data/long-term_change/countries_time_series_2010-2019_2090-2099_revised.csv", row.names = F)
+write.csv(pct_diff_avg_r_cs, file = "data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv", row.names = F)
+
+# in case running is long, save environment
+save.image(file = "data/ag_wa_revised.RData")
