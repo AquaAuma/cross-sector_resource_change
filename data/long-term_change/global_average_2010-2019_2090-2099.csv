@@ -1,0 +1,237 @@
+"sector","spatial_scale","eco_model","climate_model","experiment_climate","output_variable","percent_diff"
+"agriculture","global","crover","gfdl-esm4","ssp126","maize",0.95381863057792
+"agriculture","global","crover","gfdl-esm4","ssp126","wheat",6.12562948173297
+"agriculture","global","crover","gfdl-esm4","ssp126","soybean",12.7394524337669
+"agriculture","global","crover","gfdl-esm4","ssp126","rice",2.56014334758673
+"agriculture","global","cygma1p74","gfdl-esm4","ssp126","maize",-2.83525728011954
+"agriculture","global","cygma1p74","gfdl-esm4","ssp126","wheat",4.13029147550966
+"agriculture","global","cygma1p74","gfdl-esm4","ssp126","soybean",2.66771609117967
+"agriculture","global","cygma1p74","gfdl-esm4","ssp126","rice",8.77256867998186
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp126","maize",4.16544430658323
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp126","wheat",9.91682595327121
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp126","soybean",NA
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp126","rice",NA
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp126","maize",1.50459723193918
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp126","wheat",5.73907385073557
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp126","soybean",8.11939493949556
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp126","rice",5.78622063265064
+"agriculture","global","isam","gfdl-esm4","ssp126","maize",-3.35337088638103
+"agriculture","global","isam","gfdl-esm4","ssp126","wheat",3.98012846170614
+"agriculture","global","isam","gfdl-esm4","ssp126","soybean",7.55480376886308
+"agriculture","global","isam","gfdl-esm4","ssp126","rice",3.31229855393763
+"agriculture","global","ldndc","gfdl-esm4","ssp126","maize",1.06461920007091
+"agriculture","global","ldndc","gfdl-esm4","ssp126","wheat",4.73771593596683
+"agriculture","global","ldndc","gfdl-esm4","ssp126","soybean",0.729512802744385
+"agriculture","global","ldndc","gfdl-esm4","ssp126","rice",3.29184754275989
+"agriculture","global","lpjml","gfdl-esm4","ssp126","maize",1.65450826569782
+"agriculture","global","lpjml","gfdl-esm4","ssp126","wheat",3.99824769922088
+"agriculture","global","lpjml","gfdl-esm4","ssp126","soybean",8.15541278821544
+"agriculture","global","lpjml","gfdl-esm4","ssp126","rice",2.6209211515875
+"agriculture","global","pdssat","gfdl-esm4","ssp126","maize",-3.31928280721454
+"agriculture","global","pdssat","gfdl-esm4","ssp126","wheat",7.56256317916931
+"agriculture","global","pdssat","gfdl-esm4","ssp126","soybean",9.46138013593059
+"agriculture","global","pdssat","gfdl-esm4","ssp126","rice",3.15446543836012
+"agriculture","global","pepic","gfdl-esm4","ssp126","maize",4.05745514002445
+"agriculture","global","pepic","gfdl-esm4","ssp126","wheat",8.36428570640905
+"agriculture","global","pepic","gfdl-esm4","ssp126","soybean",7.6473046990071
+"agriculture","global","pepic","gfdl-esm4","ssp126","rice",8.36537879481296
+"agriculture","global","promet","gfdl-esm4","ssp126","maize",5.02042162910913
+"agriculture","global","promet","gfdl-esm4","ssp126","wheat",7.73686923946352
+"agriculture","global","promet","gfdl-esm4","ssp126","soybean",11.0483445575008
+"agriculture","global","promet","gfdl-esm4","ssp126","rice",8.93398128961505
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp126","maize",2.41909507588865
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp126","wheat",12.1438496933334
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp126","soybean",8.48612269288288
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp126","rice",NA
+"agriculture","global","crover","gfdl-esm4","ssp585","maize",-15.8361850862997
+"agriculture","global","crover","gfdl-esm4","ssp585","wheat",-20.5933473393859
+"agriculture","global","crover","gfdl-esm4","ssp585","soybean",-15.7011787326765
+"agriculture","global","crover","gfdl-esm4","ssp585","rice",-29.578401058458
+"agriculture","global","cygma1p74","gfdl-esm4","ssp585","maize",-44.1703002104009
+"agriculture","global","cygma1p74","gfdl-esm4","ssp585","wheat",40.434106410033
+"agriculture","global","cygma1p74","gfdl-esm4","ssp585","soybean",-41.1940068819669
+"agriculture","global","cygma1p74","gfdl-esm4","ssp585","rice",14.4560307971411
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp585","maize",-12.9143110190941
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp585","wheat",16.4620191603268
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp585","soybean",NA
+"agriculture","global","dssat-pythia","gfdl-esm4","ssp585","rice",NA
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp585","maize",-5.73268713188498
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp585","wheat",13.3571806856342
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp585","soybean",10.4875419609295
+"agriculture","global","epic-iiasa","gfdl-esm4","ssp585","rice",6.03559649762616
+"agriculture","global","isam","gfdl-esm4","ssp585","maize",-23.9656187906347
+"agriculture","global","isam","gfdl-esm4","ssp585","wheat",14.4619880330277
+"agriculture","global","isam","gfdl-esm4","ssp585","soybean",1.78241965572592
+"agriculture","global","isam","gfdl-esm4","ssp585","rice",13.8750951422936
+"agriculture","global","ldndc","gfdl-esm4","ssp585","maize",10.9907463012354
+"agriculture","global","ldndc","gfdl-esm4","ssp585","wheat",11.5693734064136
+"agriculture","global","ldndc","gfdl-esm4","ssp585","soybean",-5.01269250341774
+"agriculture","global","ldndc","gfdl-esm4","ssp585","rice",4.41229183420727
+"agriculture","global","lpjml","gfdl-esm4","ssp585","maize",1.16659071253633
+"agriculture","global","lpjml","gfdl-esm4","ssp585","wheat",16.6307563680016
+"agriculture","global","lpjml","gfdl-esm4","ssp585","soybean",32.3070942122859
+"agriculture","global","lpjml","gfdl-esm4","ssp585","rice",25.0495354873818
+"agriculture","global","pdssat","gfdl-esm4","ssp585","maize",-37.3021886459337
+"agriculture","global","pdssat","gfdl-esm4","ssp585","wheat",21.1205304788213
+"agriculture","global","pdssat","gfdl-esm4","ssp585","soybean",12.861474133117
+"agriculture","global","pdssat","gfdl-esm4","ssp585","rice",11.9205938219905
+"agriculture","global","pepic","gfdl-esm4","ssp585","maize",-9.49849601990157
+"agriculture","global","pepic","gfdl-esm4","ssp585","wheat",9.91220020433057
+"agriculture","global","pepic","gfdl-esm4","ssp585","soybean",7.10143175866606
+"agriculture","global","pepic","gfdl-esm4","ssp585","rice",5.021620927186
+"agriculture","global","promet","gfdl-esm4","ssp585","maize",16.5826205590874
+"agriculture","global","promet","gfdl-esm4","ssp585","wheat",69.1125712746541
+"agriculture","global","promet","gfdl-esm4","ssp585","soybean",55.7978495035201
+"agriculture","global","promet","gfdl-esm4","ssp585","rice",29.6697084540338
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp585","maize",-13.2190938023658
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp585","wheat",64.5882079232593
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp585","soybean",27.6994418053906
+"agriculture","global","simplace-lintul5","gfdl-esm4","ssp585","rice",NA
+"agriculture","global","crover","ipsl-cm6a-lr","ssp126","maize",-4.41464646815071
+"agriculture","global","crover","ipsl-cm6a-lr","ssp126","wheat",-0.198178166041675
+"agriculture","global","crover","ipsl-cm6a-lr","ssp126","soybean",6.03280207288082
+"agriculture","global","crover","ipsl-cm6a-lr","ssp126","rice",-3.58582202801926
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp126","maize",-10.1232653091128
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp126","wheat",-2.88894756727883
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp126","soybean",-9.88649154367755
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp126","rice",3.82702761164827
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp126","maize",-0.542804506820767
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp126","wheat",-1.32616153595485
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp126","soybean",NA
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp126","rice",NA
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp126","maize",-1.49406432247511
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp126","wheat",3.54404199882787
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp126","soybean",2.468524189495
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp126","rice",2.57537306754708
+"agriculture","global","isam","ipsl-cm6a-lr","ssp126","maize",-6.87876039491788
+"agriculture","global","isam","ipsl-cm6a-lr","ssp126","wheat",4.02182899221291
+"agriculture","global","isam","ipsl-cm6a-lr","ssp126","soybean",0.209863549424643
+"agriculture","global","isam","ipsl-cm6a-lr","ssp126","rice",-0.257231510924977
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp126","maize",-0.544077056621222
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp126","wheat",1.65924608297768
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp126","soybean",-2.42164373595891
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp126","rice",1.62686317515629
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp126","maize",0.68279509016313
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp126","wheat",1.7848886173307
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp126","soybean",5.16470679773473
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp126","rice",1.45055375578374
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp126","maize",-7.96217792203877
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp126","wheat",3.48345545889973
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp126","soybean",8.81369151077863
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp126","rice",-0.718854550742169
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp126","maize",0.155752846789907
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp126","wheat",0.970106449543348
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp126","soybean",3.20098366693477
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp126","rice",2.61135224546549
+"agriculture","global","promet","ipsl-cm6a-lr","ssp126","maize",0.411060729904927
+"agriculture","global","promet","ipsl-cm6a-lr","ssp126","wheat",8.20476097341352
+"agriculture","global","promet","ipsl-cm6a-lr","ssp126","soybean",4.37875520267478
+"agriculture","global","promet","ipsl-cm6a-lr","ssp126","rice",3.26779628741224
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp126","maize",-3.28195648938473
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp126","wheat",6.22124092462076
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp126","soybean",2.86515455067308
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp126","rice",NA
+"agriculture","global","crover","ipsl-cm6a-lr","ssp585","maize",-30.3458787243067
+"agriculture","global","crover","ipsl-cm6a-lr","ssp585","wheat",-41.4202315716709
+"agriculture","global","crover","ipsl-cm6a-lr","ssp585","soybean",-40.0585160105218
+"agriculture","global","crover","ipsl-cm6a-lr","ssp585","rice",-51.6643104447602
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp585","maize",-68.7325909955658
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp585","wheat",-10.6789654999771
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp585","soybean",-71.3021173020169
+"agriculture","global","cygma1p74","ipsl-cm6a-lr","ssp585","rice",-15.7123024842321
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp585","maize",-52.8143737072514
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp585","wheat",-5.31985770963227
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp585","soybean",NA
+"agriculture","global","dssat-pythia","ipsl-cm6a-lr","ssp585","rice",NA
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp585","maize",-25.2048893929827
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp585","wheat",-8.89779718118094
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp585","soybean",-21.235904367657
+"agriculture","global","epic-iiasa","ipsl-cm6a-lr","ssp585","rice",-15.3069593670667
+"agriculture","global","isam","ipsl-cm6a-lr","ssp585","maize",-38.4233658149762
+"agriculture","global","isam","ipsl-cm6a-lr","ssp585","wheat",-6.75154495991679
+"agriculture","global","isam","ipsl-cm6a-lr","ssp585","soybean",-30.6868974773507
+"agriculture","global","isam","ipsl-cm6a-lr","ssp585","rice",-1.76359863670107
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp585","maize",4.54255757091513
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp585","wheat",-3.63181821869756
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp585","soybean",-23.5620633887332
+"agriculture","global","ldndc","ipsl-cm6a-lr","ssp585","rice",-6.82583976252575
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp585","maize",-8.35053984170706
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp585","wheat",5.48325662669631
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp585","soybean",17.8983209162434
+"agriculture","global","lpjml","ipsl-cm6a-lr","ssp585","rice",10.3533171718519
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp585","maize",-62.2129480250406
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp585","wheat",3.25755210685991
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp585","soybean",-22.310590952841
+"agriculture","global","pdssat","ipsl-cm6a-lr","ssp585","rice",-12.1309850940796
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp585","maize",-33.8492924662407
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp585","wheat",-11.8619647567749
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp585","soybean",-23.5725552518689
+"agriculture","global","pepic","ipsl-cm6a-lr","ssp585","rice",-21.6640269239853
+"agriculture","global","promet","ipsl-cm6a-lr","ssp585","maize",0.389863844952633
+"agriculture","global","promet","ipsl-cm6a-lr","ssp585","wheat",38.3873504932862
+"agriculture","global","promet","ipsl-cm6a-lr","ssp585","soybean",33.428248899329
+"agriculture","global","promet","ipsl-cm6a-lr","ssp585","rice",11.0077508993048
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp585","maize",-49.2807368780466
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp585","wheat",20.0259498618644
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp585","soybean",-7.8296951233303
+"agriculture","global","simplace-lintul5","ipsl-cm6a-lr","ssp585","rice",NA
+"marine-fishery_global","global","apecosm","ipsl-cm6a-lr","ssp126","total consumer biomass",-3.25711048072217
+"marine-fishery_global","global","apecosm","ipsl-cm6a-lr","ssp585","total consumer biomass",-12.4267340964188
+"marine-fishery_global","global","boats","gfdl-esm4","ssp126","total consumer biomass",-7.60988891631962
+"marine-fishery_global","global","boats","gfdl-esm4","ssp585","total consumer biomass",-21.9913368606036
+"marine-fishery_global","global","boats","ipsl-cm6a-lr","ssp126","total consumer biomass",-5.67069797362964
+"marine-fishery_global","global","boats","ipsl-cm6a-lr","ssp585","total consumer biomass",-21.8867969152722
+"marine-fishery_global","global","dbem","gfdl-esm4","ssp126","total consumer biomass",-3.13250331270418
+"marine-fishery_global","global","dbem","gfdl-esm4","ssp585","total consumer biomass",-6.56717650900018
+"marine-fishery_global","global","dbem","ipsl-cm6a-lr","ssp126","total consumer biomass",0.735102718736497
+"marine-fishery_global","global","dbem","ipsl-cm6a-lr","ssp585","total consumer biomass",-11.2898225364746
+"marine-fishery_global","global","dbpm","ipsl-cm6a-lr","ssp126","total consumer biomass",-5.56579366102821
+"marine-fishery_global","global","dbpm","ipsl-cm6a-lr","ssp585","total consumer biomass",-11.5939655887122
+"marine-fishery_global","global","ecoocean","gfdl-esm4","ssp126","total consumer biomass",-1.04010440138451
+"marine-fishery_global","global","ecoocean","gfdl-esm4","ssp585","total consumer biomass",-6.62190845227709
+"marine-fishery_global","global","ecoocean","ipsl-cm6a-lr","ssp126","total consumer biomass",-3.04196031778224
+"marine-fishery_global","global","ecoocean","ipsl-cm6a-lr","ssp585","total consumer biomass",-9.00956898971783
+"marine-fishery_global","global","ecotroph","gfdl-esm4","ssp126","total consumer biomass",-3.15259604479031
+"marine-fishery_global","global","ecotroph","gfdl-esm4","ssp585","total consumer biomass",-15.8696369597426
+"marine-fishery_global","global","ecotroph","ipsl-cm6a-lr","ssp126","total consumer biomass",-3.62000960148926
+"marine-fishery_global","global","ecotroph","ipsl-cm6a-lr","ssp585","total consumer biomass",-14.2253946833112
+"marine-fishery_global","global","feisty","gfdl-esm4","ssp126","total consumer biomass",-6.58915028322522
+"marine-fishery_global","global","feisty","gfdl-esm4","ssp585","total consumer biomass",-21.5675366035408
+"marine-fishery_global","global","feisty","ipsl-cm6a-lr","ssp126","total consumer biomass",-0.499256446586017
+"marine-fishery_global","global","feisty","ipsl-cm6a-lr","ssp585","total consumer biomass",-11.270532469684
+"marine-fishery_global","global","macroecological","gfdl-esm4","ssp126","total consumer biomass",-4.92736584655178
+"marine-fishery_global","global","macroecological","gfdl-esm4","ssp585","total consumer biomass",-18.3577954522277
+"marine-fishery_global","global","macroecological","ipsl-cm6a-lr","ssp126","total consumer biomass",-6.16500403089106
+"marine-fishery_global","global","macroecological","ipsl-cm6a-lr","ssp585","total consumer biomass",-26.4154807114407
+"marine-fishery_global","global","zoomss","gfdl-esm4","ssp126","total consumer biomass",-4.4622586152147
+"marine-fishery_global","global","zoomss","gfdl-esm4","ssp585","total consumer biomass",-14.198072192684
+"marine-fishery_global","global","zoomss","ipsl-cm6a-lr","ssp126","total consumer biomass",-2.23736179706162
+"marine-fishery_global","global","zoomss","ipsl-cm6a-lr","ssp585","total consumer biomass",-13.2178839886548
+"water_global","global","h08","gfdl-esm4","ssp126","ptotww",1.7094069907408
+"water_global","global","h08","gfdl-esm4","ssp126","tws",-9.38745249052946
+"water_global","global","h08","gfdl-esm4","ssp585","ptotww",6.8145831544272
+"water_global","global","h08","gfdl-esm4","ssp585","tws",-24.2560388756224
+"water_global","global","h08","ipsl-cm6a-lr","ssp126","ptotww",0.312502271789635
+"water_global","global","h08","ipsl-cm6a-lr","ssp126","tws",-5.71353887193841
+"water_global","global","h08","ipsl-cm6a-lr","ssp585","ptotww",10.328600674753
+"water_global","global","h08","ipsl-cm6a-lr","ssp585","tws",-20.2796249601688
+"water_global","global","jules-w2","gfdl-esm4","ssp126","tws",-2.87167824007371
+"water_global","global","jules-w2","gfdl-esm4","ssp585","tws",-7.84928956438901
+"water_global","global","jules-w2","ipsl-cm6a-lr","ssp126","tws",-8.67510815019452
+"water_global","global","jules-w2","ipsl-cm6a-lr","ssp585","tws",-19.7699861934484
+"water_global","global","miroc-integ-land","gfdl-esm4","ssp126","tws",-0.19647786021068
+"water_global","global","miroc-integ-land","gfdl-esm4","ssp585","tws",-0.194220379713244
+"water_global","global","miroc-integ-land","ipsl-cm6a-lr","ssp126","tws",-0.223985760414836
+"water_global","global","miroc-integ-land","ipsl-cm6a-lr","ssp585","tws",-0.217553435227656
+"water_global","global","watergap2-2e","gfdl-esm4","ssp126","ptotww",3.02818195038019
+"water_global","global","watergap2-2e","gfdl-esm4","ssp126","tws",16.0188241413135
+"water_global","global","watergap2-2e","gfdl-esm4","ssp585","ptotww",4.25349100907154
+"water_global","global","watergap2-2e","gfdl-esm4","ssp585","tws",11.8377493561327
+"water_global","global","watergap2-2e","ipsl-cm6a-lr","ssp126","ptotww",1.46500470817452
+"water_global","global","watergap2-2e","ipsl-cm6a-lr","ssp126","tws",15.835120507382
+"water_global","global","watergap2-2e","ipsl-cm6a-lr","ssp585","ptotww",3.96361191013277
+"water_global","global","watergap2-2e","ipsl-cm6a-lr","ssp585","tws",8.73136493541099
+"water_global","global","web-dhm-sg","gfdl-esm4","ssp126","tws",-1.5537639921296
+"water_global","global","web-dhm-sg","gfdl-esm4","ssp585","tws",-7.10551901936737
+"water_global","global","web-dhm-sg","ipsl-cm6a-lr","ssp126","tws",-1.99529115885025
+"water_global","global","web-dhm-sg","ipsl-cm6a-lr","ssp585","tws",-13.3201672787961
