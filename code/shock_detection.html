@@ -1664,16 +1664,16 @@ past anthropogenic warming is here estimated by applying a 31-year
 running mean with a linear extrapolation for the last 15 years, assuming
 constant warming rate based on the last 31 years.”</p>
 </div>
-<div id="savitsky-golay" class="section level3">
-<h3>Savitsky-Golay</h3>
-<p>A Savitsky-Golay low-pass filter (e.g., as in <a href="https://doi.org/10.1016/j.sigpro.2005.02.002">this paper</a>) can
+<div id="savitzky-golay" class="section level3">
+<h3>Savitzky-Golay</h3>
+<p>A Savitzky-Golay low-pass filter (e.g., as in <a href="https://doi.org/10.1016/j.sigpro.2005.02.002">this paper</a>) can
 detrend the data to isolate shocks.</p>
 <ul>
 <li>See brief description of low-pass filters <a href="https://se.mathworks.com/discovery/low-pass-filter.html">here</a>.</li>
 </ul>
 <!-- -->
 <ul>
-<li>See brief description of Savitsky-Golay filters <a href="https://se.mathworks.com/help/signal/ref/sgolayfilt.html">here</a>.</li>
+<li>See brief description of Savitzky-Golay filters <a href="https://se.mathworks.com/help/signal/ref/sgolayfilt.html">here</a>.</li>
 </ul>
 <p>The savgol() function from the `pracma` R package is used, where the
 derivative order parameter <em>dorder</em> is set to 0 for smoothing,

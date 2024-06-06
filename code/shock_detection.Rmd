@@ -132,15 +132,15 @@ grid.arrange(plot_maize, plot_wheat, plot_soybean, plot_rice,nrow = 2)
 
 An extrapolation of the time-series could be considered, as done in a previous [publication](https://doi.org/10.5194/egusphere-2024-488): "The past anthropogenic warming is here estimated by applying a 31-year running mean with a linear extrapolation for the last 15 years, assuming constant warming rate based on the last 31 years."
 
-### Savitsky-Golay
+### Savitzky-Golay
 
-A Savitsky-Golay low-pass filter (e.g., as in [this paper](https://doi.org/10.1016/j.sigpro.2005.02.002)) can detrend the data to isolate shocks.
+A Savitzky-Golay low-pass filter (e.g., as in [this paper](https://doi.org/10.1016/j.sigpro.2005.02.002)) can detrend the data to isolate shocks.
 
 -   See brief description of low-pass filters [here](https://se.mathworks.com/discovery/low-pass-filter.html).
 
 <!-- -->
 
--   See brief description of Savitsky-Golay filters [here](https://se.mathworks.com/help/signal/ref/sgolayfilt.html).
+-   See brief description of Savitzky-Golay filters [here](https://se.mathworks.com/help/signal/ref/sgolayfilt.html).
 
 The savgol() function from the \`pracma\` R package is used, where the derivative order parameter *dorder* is set to 0 for smoothing, the filter order parameter *forder* is set to 4 for a quartic filter, and the filter length parameter *fl* is set at 11.
 
