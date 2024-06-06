@@ -1,0 +1,151 @@
+---
+title: "cross sector shocks"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE, warnings = FALSE, message = FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+
+# load data
+shock_ts_g_cs <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/global_shocks_time_series_2010-2019.csv")
+```
+
+## Shock probability across models
+
+To get the yearly shock probability for each combination of sector, climate model, climate experiment, and output_variable, we:
+
+-   applied a smoother (loess R function) per ecological model
+
+-   extract the z-scored residuals
+
+-   counted the number of shocks (beyond 2SD of the mean) across the time-series, and whether the shocks are from increases or decreases in the resource level
+
+-   calculated the mean number of shocks across ecological models, as a way to aggregate the model ensembles
+
+Below is the example of maize globally across climates:
+
+```{r maizeshocks, fig.width=10, warning=FALSE, message=FALSE}
+shock_ts_g_cs %>% 
+  filter(output_variable != "ptotww",
+         output_variable == "maize") %>%
+  mutate(shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>% 
+  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  pivot_longer(c("shock","shock_down","shock_up"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = years, y = p_shock, fill = shock_type)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  ylim(0,1) + ylab("Shock probability") +
+  scale_fill_manual(breaks = c("shock","shock_down","shock_up"), 
+                    labels = c("shock","down","up"),
+                    values = c("grey50","mediumaquamarine","lightsalmon")) +
+  facet_wrap(~ climates)
+```
+
+## Shock probability for multiple resources
+
+Shock probabilities for GFDL-ESM4 and SSP585 across sectors and modelled resources:
+
+```{r shockprobabilities, fig.width=10, echo=FALSE, warning=FALSE, message=FALSE}
+
+shock_ts_g_cs %>% 
+  filter(output_variable != "ptotww") %>%
+  mutate(shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>% 
+  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+  filter(climates == "gfdl-esm4 ssp585") %>% 
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  pivot_longer(c("shock","shock_down","shock_up"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = years, y = p_shock, fill = shock_type)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  ylab("Shock probability") +
+  scale_fill_manual(breaks = c("shock","shock_down","shock_up"), 
+                    labels = c("shock","down","up"),
+                    values = c("grey50","mediumaquamarine","lightsalmon")) +
+  facet_wrap(~ output_variable)
+```
+
+## Cross-sector shock probability
+
+To get the cross-sector shock occurrence probability, we multiply the shock probability from multiple sector together. For this, we selected maize, soybean, rice, wheat, tcblog10, qtot, and tws. The plot below shows the cross-sector probability across climates globally:
+
+```{r crosssectorprobability, fig.width=10, warning=FALSE, message=FALSE}
+
+shock_ts_g_cs %>% 
+  filter(output_variable %in% c("maize","soybean","rice","wheat","tcblog10","qtot","tws")) %>%
+  mutate(shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>% 
+  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  group_by(climates, years) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  pivot_longer(c("shock","shock_down","shock_up"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = years, y = p_shock, fill = shock_type)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  ylab("Cross-sector shock probability") +
+  scale_fill_manual(breaks = c("shock","shock_down","shock_up"), 
+                    labels = c("shock","down","up"),
+                    values = c("grey50","mediumaquamarine","lightsalmon")) +
+  facet_wrap(~ climates)
+```
+
+Summary of cross-sector shock occurrence probability over the last decade (2090-2100) across climates and shock types:
+
+```{r crosssectorstats, echo=FALSE, warning=FALSE, message=FALSE, fig.height=5}
+
+shock_ts_g_cs %>% 
+  filter(output_variable %in% c("maize","soybean","rice","wheat","tcblog10","qtot","tws")) %>%
+  mutate(shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>% 
+  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  group_by(climates, years) %>% 
+  summarize(shock = mean(shock),
+            shock_down = mean(shock_down),
+            shock_up = mean(shock_up)) %>% 
+  pivot_longer(c("shock","shock_down","shock_up"), names_to = "shock_type",values_to = "p_shock") %>% 
+  filter(years>2089) %>% 
+  ggplot(aes(y = p_shock, x = climates)) + 
+  geom_boxplot() +
+  theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("Cross-sector shock probability") +
+  scale_fill_manual(breaks = c("shock","shock_down","shock_up"), 
+                    labels = c("shock","down","up"),
+                    values = c("grey50","mediumaquamarine","lightsalmon")) +
+  facet_wrap(~ shock_type)
+```
