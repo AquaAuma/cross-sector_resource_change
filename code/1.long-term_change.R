@@ -716,6 +716,7 @@ for(e in 1:length(eco_model)){
         output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
         var_array <- ncvar_get(output_i, names(output_i$var))
         time_i <- get_times(name.models, i)
+        area_i <- t(as.matrix(grid_cells_areas(var_array)))
         var_array_i <- apply(var_array, 3, sum, na.rm=T)
         # add historical simulations 
         h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable==name.models$output_variable[i])
@@ -839,6 +840,7 @@ for(e in 1:length(eco_model)){
         output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
         var_array <- ncvar_get(output_i, names(output_i$var))
         time_i <- get_times(name.models, i)
+        area_i <- t(as.matrix(grid_cells_areas(var_array)))
         # add historical simulations 
         h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable==name.models$output_variable[i])
         time_h <- get_times(name.models, h)
@@ -954,4 +956,4 @@ write.csv(pct_diff_ts_r_cs, file = "data/long-term_change/countries_time_series_
 write.csv(pct_diff_avg_r_cs, file = "data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv", row.names = F)
 
 # in case running is long, save environment
-save.image(file = "data/ag_wa_revised.RData")
+# save.image(file = "data/ag_fi_r_revised.RData")
