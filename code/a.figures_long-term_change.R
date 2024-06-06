@@ -1,5 +1,5 @@
 #### Long-term cross-sector resource change figures
-#### Coding: Aurore A. Maureaud, April 2024
+#### Coding: Aurore A. Maureaud, June 2024
 
 # load libraries
 library(raster)
@@ -17,7 +17,7 @@ regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>%
   dplyr::select(UNION)
 
 #### A. Map of % difference for 2090-2099 compared to 2010-2019 ----
-dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv") %>% 
+dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww") %>% 
   mutate(percent_diff = ifelse(!is.finite(percent_diff), NA, percent_diff)) %>% 
@@ -28,7 +28,7 @@ dat_map <- data.frame(left_join(dat, regions, by = c("regions" = "UNION")))
 dat_map <- st_as_sf(dat_map)
 
 # map for GFDL for all sectors ----
-png("figures/long-term_change/percent_difference_gfdl_esm4_ssp585_2010-2019_2090-2099.png",
+png("figures/long-term_change/percent_difference_gfdl_esm4_ssp585_2010-2019_2090-2099_revised.png",
     width = 15*200, height = 8*200, res = 200)
 dat_map %>% 
   filter(climate_model == "gfdl-esm4") %>% 
@@ -41,7 +41,7 @@ dat_map %>%
 dev.off()
 
 # map for IPSL for all sectors ----
-png("figures/long-term_change/percent_difference_ipsl-cm6a-lr_ssp585_2010-2019_2090-2099.png",
+png("figures/long-term_change/percent_difference_ipsl-cm6a-lr_ssp585_2010-2019_2090-2099_revised.png",
     width = 15*200, height = 8*200, res = 200)
 dat_map %>% 
   filter(climate_model == "ipsl-cm6a-lr") %>% 
@@ -54,7 +54,7 @@ dat_map %>%
 dev.off()
 
 # map for climate models median ----
-dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv") %>% 
+dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww") %>% 
   mutate(percent_diff = ifelse(!is.finite(percent_diff), NA, percent_diff)) %>% 
@@ -65,7 +65,7 @@ dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv
 dat_map <- data.frame(left_join(dat, regions, by = c("regions" = "UNION")))
 dat_map <- st_as_sf(dat_map)
 
-png("figures/long-term_change/percent_difference_climate_ensemble_ssp585_2010-2019_2090-2099.png",
+png("figures/long-term_change/percent_difference_climate_ensemble_ssp585_2010-2019_2090-2099_revised.png",
     width = 15*200, height = 8*200, res = 200)
   ggplot(dat_map) + geom_sf(aes(fill = percent_diff)) +
   scale_fill_distiller(palette = "Spectral", direction = 1,
@@ -76,7 +76,7 @@ png("figures/long-term_change/percent_difference_climate_ensemble_ssp585_2010-20
 dev.off()
 
 # number of sectors/output_variable per country ----
-dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv") %>% 
+dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww") %>% 
   mutate(percent_diff = ifelse(!is.finite(percent_diff), NA, percent_diff)) %>% 
@@ -90,7 +90,7 @@ dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv
 dat_map <- data.frame(left_join(dat, regions, by = c("regions" = "UNION")))
 dat_map <- st_as_sf(dat_map)
 
-png("figures/long-term_change/nvar_by_country.png",
+png("figures/long-term_change/nvar_by_country_revised.png",
     width = 10*200, height = 5*200, res = 200)
 ggplot(dat_map) + geom_sf(aes(fill = nvar)) +
   scale_fill_distiller(palette = "Greys", direction = 1, limits = c(0,1)) +
@@ -98,8 +98,8 @@ ggplot(dat_map) + geom_sf(aes(fill = nvar)) +
   ggtitle("Number of output variables by country")
 dev.off()
 
-# number of sectors/output_variable per country ----
-dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv") %>% 
+# cross-sector maps ----
+dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww") %>% 
   mutate(percent_diff = ifelse(!is.finite(percent_diff), NA, percent_diff)) %>% 
@@ -121,23 +121,23 @@ climates <- sort(unique(dat_map$climate_model))
 
 for(c in 1:length(climates)){
   nhigher <- ggplot(dat_map[dat_map$climate_model==climates[c],]) + geom_sf(aes(fill = nhigher25)) +
-    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,6)) +
+    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,8)) +
     theme_bw() +
     ggtitle(climates[c])
   nlower <- ggplot(dat_map[dat_map$climate_model==climates[c],]) + geom_sf(aes(fill = nlower25)) +
-    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,6)) +
+    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,8)) +
     theme_bw() +
     ggtitle(climates[c])
   npositive <- ggplot(dat_map[dat_map$climate_model==climates[c],]) + geom_sf(aes(fill = npositive)) +
-    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,6)) +
+    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,8)) +
     theme_bw() +
     ggtitle(climates[c])
   nnegative <- ggplot(dat_map[dat_map$climate_model==climates[c],]) + geom_sf(aes(fill = nnegative)) +
-    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,6)) +
+    scale_fill_distiller(palette = "BuPu", direction = 1, limits = c(0,8)) +
     theme_bw() +
     ggtitle(climates[c])
   
-  png(paste0("figures/long-term_change/cross-sector_map_",climates[c],"_ssp585_2010-2019_2090-2099.png"), 
+  png(paste0("figures/long-term_change/cross-sector_map_",climates[c],"_ssp585_2010-2019_2090-2099_revised.png"), 
       width = 15*200, height = 8*200, res = 200)
   grid.arrange(nhigher, nlower, npositive, nnegative, ncol = 2)
   dev.off()
@@ -146,7 +146,7 @@ for(c in 1:length(climates)){
 
 # Nigeria resource long-term change ----
 
-dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099.csv") %>% 
+dat <- read_csv("data/long-term_change/countries_average_2010-2019_2090-2099_revised.csv") %>% 
   filter(experiment_climate == "ssp585",
          output_variable != "ptotww",
          regions == "Nigeria") %>% 
@@ -169,4 +169,4 @@ ggplot(dat) +
   scale_fill_manual(values = c("indianred1","indianred4"))
 dev.off()
 
-#### B. Maps of % difference for 2080-2099 compared to 2000-2019 ----
+
