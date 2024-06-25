@@ -19,6 +19,10 @@ knitr::opts_chunk$set(
 library(here)
 library(tidyverse)
 library(ggplot2)
+library(gridExtra)
+
+# load useful functions
+source("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/functions/get_probas.R")
 
 # load data
 shock_ts_g_cs <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/global_shocks_time_series_2010-2019.csv")
@@ -216,18 +220,20 @@ shock_ts_g_cs %>%
   scale_fill_manual(breaks = c("at_least_one_shock","at_least_two_shocks","at_least_three_shocks"), 
                     labels = c("1+","2+","3+"),
                     values = c("gold","darkorange","firebrick3")) +
-  facet_wrap(~ shock_type)
+  facet_wrap(~ shock_type, scales = "free")
 ```
 
 ## Cross-sector shock probability across years
 
-To get the cross-sector occurrence probability across years, we calculate the cross-sector probability over the last 30 years that there is:
+To get the cross-sector occurrence probability across years, we calculate the cross-sector probability over the last 10 years that there is:
 
--   at least one year with at least one shock in the same year: P(X\>=1) = 1-P(X=0) = 1-(1-Px\>=1,y1)\**...\**(1-Px\>=1,y30)
+-   at least one shock over the period of time
 
--   at least one year with at least two shocks in the same year: P(X\>=2) = P(X\>=1)-P(X=1) = P(X\>=1) - (Px\>=1,y1\*(1-Px\>=1,y2)\*...\*(1-Px\>=1,y30) +...+ Px\>=1,y30\*(1-Px\>=1,y1)\*...\*(1-Px\>=1,y29)
+-   at least two shocks in the same year once over the period of time
 
--   at least one year with at least three shocks in the same year:
+-   at least three shocks in the same year once over the period of time
+
+The graphs show the non-logged and logged probability distribution:
 
 ```{r crosssectorcrosstimeprobability, fig.width=10, warning=FALSE, message=FALSE}
 
@@ -235,53 +241,133 @@ xx <- shock_ts_g_cs %>%
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
   mutate(shock = ifelse(is.na(shock),0,shock),
          shock_up = ifelse(is.na(shock_up),0,shock_up),
-         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>% 
-  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(climates, years, output_variable) %>% 
-  summarize(shock = mean(shock),
-            shock_down = mean(shock_down),
-            shock_up = mean(shock_up)) %>% 
+  summarize(shock = round(mean(shock),4),
+            shock_down = round(mean(shock_down),4),
+            shock_up = round(mean(shock_up),4)) %>% 
   dplyr::select(climates, years, output_variable, shock) %>% 
   pivot_wider(names_from = output_variable, values_from = shock) %>% 
-  mutate(
-         # probability there is at least one shock per year
-         at_least_one_shock = 1-(1-maize)*(1-qtot)*(1-rice)*(1-soybean)*(1-tcblog10)*(1-wheat),
-         # probability there is one shock per year
-         one_shock = maize*(1-qtot)*(1-rice)*(1-soybean)*(1-tcblog10)*(1-wheat) + 
-                     qtot*(1-maize)*(1-rice)*(1-tcblog10)*(1-soybean)*(1-wheat) +
-                     rice*(1-qtot)*(1-maize)*(1-tcblog10)*(1-soybean)*(1-wheat) +
-                     soybean*(1-maize)*(1-qtot)*(1-rice)*(1-tcblog10)*(1-wheat) +
-                     tcblog10*(1-maize)*(1-qtot)*(1-rice)*(1-soybean)*(1-wheat) +
-                     wheat*(1-maize)*(1-qtot)*(1-rice)*(1-tcblog10)*(1-soybean),
-         # probability there are at least two shocks per year
-         at_least_two_shocks = at_least_one_shock-one_shock,
-         # probability there are two shocks per year
-         two_shocks = maize*qtot*(1-rice)*(1-soybean)*(1-tcblog10)*(1-wheat) +
-                      maize*rice*(1-qtot)*(1-soybean)*(1-tcblog10)*(1-wheat) +
-                      maize*soybean*(1-qtot)*(1-rice)*(1-tcblog10)*(1-wheat) +
-                      maize*tcblog10*(1-qtot)*(1-rice)*(1-soybean)*(1-wheat) +
-                      maize*wheat*(1-qtot)*(1-rice)*(1-soybean)*(1-tcblog10) +
-                      qtot*rice*(1-maize)*(1-soybean)*(1-tcblog10)*(1-wheat) +
-                      qtot*soybean*(1-maize)*(1-rice)*(1-tcblog10)*(1-wheat) +
-                      qtot*tcblog10*(1-maize)*(1-rice)*(1-soybean)*(1-wheat) +
-                      qtot*wheat*(1-maize)*(1-rice)*(1-tcblog10)*(1-soybean) +
-                      rice*soybean*(1-maize)*(1-qtot)*(1-tcblog10)*(1-wheat) +
-                      rice*tcblog10*(1-maize)*(1-soybean)*(1-qtot)*(1-wheat) +
-                      rice*wheat*(1-maize)*(1-soybean)*(1-qtot)*(1-tcblog10) +
-                      soybean*tcblog10*(1-maize)*(1-qtot)*(1-rice)*(1-wheat) +
-                      soybean*wheat*(1-maize)*(1-qtot)*(1-rice)*(1-tcblog10) +
-                      tcblog10*wheat*(1-maize)*(1-soybean)*(1-rice)*(1-qtot),
-         # probability there are at least three shocks per year
-         at_least_three_shocks = at_least_two_shocks-two_shocks) %>% 
+  data.frame() %>% 
+  filter(years>2089,
+         years<2100)
+
+xx$at_least_one_shock <- xx$at_least_two_shocks <- xx$at_least_three_shocks <- NA
+xx$at_least_one_shock <- apply(xx[,3:8], 1, function(x) get_at_least_one(6,x))
+xx$at_least_two_shocks <- apply(xx[,3:8], 1, function(x) get_at_least_two(6,x))
+xx$at_least_three_shocks <- apply(xx[,3:8], 1, function(x) get_at_least_three(6,x))
+
+xx <- xx %>% 
   dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
-  filter(years>2089) %>% 
-  ggplot(aes(x = years, y = p_shock, fill = shock_type)) +
-  #scale_y_log10() +
+  group_by(climates) %>% 
+  summarize(at_least_one_shock_10y = get_at_least_one(10,at_least_one_shock),
+            at_least_two_shocks_10y = get_at_least_two(10, at_least_two_shocks),
+            at_least_three_shocks_10y = get_at_least_three(10, at_least_three_shocks))
+
+plot_not_log <- xx %>% 
+  pivot_longer(c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = climates, y = p_shock, fill = shock_type)) +
   geom_bar(stat = "identity", position = "dodge") +
   theme_bw() +
   ylab("Cross-sector shock probability") +
-  scale_fill_manual(breaks = c("at_least_one_shock","at_least_two_shocks","at_least_three_shocks"), 
-                    labels = c("1+","2+","3+"),
+  scale_fill_manual(breaks = c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), 
+                    labels = c("1 in 10y","2 in 10y","3 in 10y"),
                     values = c("gold","darkorange","firebrick3")) +
-  facet_wrap(~ climates)
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+
+plot_log <- xx %>% 
+  pivot_longer(c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = climates, y = p_shock, fill = shock_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  ylab("Cross-sector shock probability") +
+  scale_fill_manual(breaks = c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), 
+                    labels = c("1 in 10y","2 in 10y","3 in 10y"),
+                    values = c("gold","darkorange","firebrick3")) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  scale_y_log10()
+
+grid.arrange(plot_not_log, plot_log, ncol=2)
+```
+
+Let's also compare the effect of the time window on the overall probability (looking at the probability there are at least 1, 2, or 3 shocks at least once over 10, 20 or 30 years towards the end of the century, selected as 2070-2099, 2080-2099, 2090-2099 respectively):
+
+```{r crosssectoryearwindow, fig.width=10, fig.height = 8, warning=FALSE, message=FALSE}
+
+xx <- shock_ts_g_cs %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
+  mutate(shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>%
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock = round(mean(shock),4),
+            shock_down = round(mean(shock_down),4),
+            shock_up = round(mean(shock_up),4)) %>% 
+  dplyr::select(climates, years, output_variable, shock) %>% 
+  pivot_wider(names_from = output_variable, values_from = shock) %>% 
+  data.frame() %>% 
+  filter(years>2069,
+         years<2100)
+
+xx$at_least_one_shock <- xx$at_least_two_shocks <- xx$at_least_three_shocks <- NA
+xx$at_least_one_shock <- apply(xx[,3:8], 1, function(x) get_at_least_one(6,x))
+xx$at_least_two_shocks <- apply(xx[,3:8], 1, function(x) get_at_least_two(6,x))
+xx$at_least_three_shocks <- apply(xx[,3:8], 1, function(x) get_at_least_three(6,x))
+
+xx30 <- xx %>% 
+  dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+  group_by(climates) %>% 
+  summarize(at_least_one_shock_10y = get_at_least_one(10,at_least_one_shock),
+            at_least_two_shocks_10y = get_at_least_two(10, at_least_two_shocks),
+            at_least_three_shocks_10y = get_at_least_three(10, at_least_three_shocks)) %>% 
+  mutate(window = "30")
+
+xx20 <- xx %>% 
+  filter(years>2079) %>% 
+  dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+  group_by(climates) %>% 
+  summarize(at_least_one_shock_10y = get_at_least_one(10,at_least_one_shock),
+            at_least_two_shocks_10y = get_at_least_two(10, at_least_two_shocks),
+            at_least_three_shocks_10y = get_at_least_three(10, at_least_three_shocks)) %>% 
+  mutate(window = "20")
+
+xx10 <- xx %>% 
+  filter(years>2089) %>% 
+  dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+  group_by(climates) %>% 
+  summarize(at_least_one_shock_10y = get_at_least_one(10,at_least_one_shock),
+            at_least_two_shocks_10y = get_at_least_two(10, at_least_two_shocks),
+            at_least_three_shocks_10y = get_at_least_three(10, at_least_three_shocks)) %>% 
+  mutate(window = "10")
+
+dat <- rbind(xx30,xx20,xx10)
+
+plot_not_log <- dat %>% 
+  pivot_longer(c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = climates, y = p_shock, fill = shock_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  facet_wrap(~ window) +
+  ylab("Cross-sector shock probability") +
+  scale_fill_manual(breaks = c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), 
+                    labels = c("1 in 10y","2 in 10y","3 in 10y"),
+                    values = c("gold","darkorange","firebrick3")) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+
+plot_log <- dat %>% 
+  pivot_longer(c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), names_to = "shock_type",values_to = "p_shock") %>% 
+  ggplot(aes(x = climates, y = p_shock, fill = shock_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  facet_wrap(~ window) +
+  ylab("Cross-sector shock probability") +
+  scale_fill_manual(breaks = c("at_least_one_shock_10y","at_least_two_shocks_10y","at_least_three_shocks_10y"), 
+                    labels = c("1 in 10y","2 in 10y","3 in 10y"),
+                    values = c("gold","darkorange","firebrick3")) +
+  theme(axis.text.x = element_text(angle = 45, vjust=1, hjust=1)) +
+  scale_y_log10()
+
+grid.arrange(plot_not_log, plot_log, ncol=1)
 ```

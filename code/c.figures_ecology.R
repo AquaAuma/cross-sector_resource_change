@@ -1,0 +1,466 @@
+#### Manuscript figures
+#### Coding: Aurore A. Maureaud, June 2024
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(ggExtra)
+
+
+################################################################################
+#### 1. ARE COUNTRIES EXPERIENCING SHORT- AND LONG-TERM CROSS-SECTOR CHANGES?
+################################################################################
+
+## load data
+# countries
+shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_2010-2019_probas.csv")
+change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_2010-2019_probas.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_2010-2019_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_2010-2019_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
+long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+
+### Combining all plots possible
+# plots combined for at least 1 shock
+yrs <- c(10,20,30)
+for(i in 1:length(yrs)){
+  # at least one resource
+  one_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_5, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_5, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_5")
+  
+  one_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_10, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_10, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_10")
+  
+  one_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_25, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_25, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_25")
+  
+  # at least two resources
+  two_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_5, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_5")
+  
+  two_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_10")
+  
+  two_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_25, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_25, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_25")
+  
+  # at least three resources
+  three_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_5, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_5")
+  
+  three_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_10, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_10")
+  
+  three_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_25, x = at_least_one_shock)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_three_change_25, x = at_least_one_shock),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    ylab("three_25")
+  
+  # combined plot
+  png(paste0("figures/combined/combined_plots_",yrs[i],"_at_least_one_shock.png"),
+      width = 8*200, height = 15*200, res = 200)
+  grid.arrange(one_5, one_10, one_25,
+               two_5, two_10, two_25,
+               three_5, three_10, three_25,
+               nrow = 9, 
+               name = paste("Time window of ", yrs[i]))
+  dev.off()
+}
+
+
+# plots combined for at least 2 shocks
+for(i in 1:length(yrs)){
+  # at least one resource
+  one_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_5, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_5, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_5")
+  
+  one_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_10, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_10, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_10")
+  
+  one_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_25, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_25, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_25")
+  
+  # at least two resources
+  two_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_5, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_5")
+  
+  two_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_10, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_10")
+  
+  two_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_25, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_25")
+  
+  # at least three resources
+  three_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_5, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_5")
+  
+  three_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_10, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_10")
+  
+  three_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_25, x = at_least_two_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_three_change_25, x = at_least_two_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    ylab("three_25")
+  
+  # combined plot
+  png(paste0("figures/combined/combined_plots_",yrs[i],"_at_least_two_shocks.png"),
+      width = 8*200, height = 15*200, res = 200)
+  grid.arrange(one_5, one_10, one_25,
+               two_5, two_10, two_25,
+               three_5, three_10, three_25,
+               nrow = 9, 
+               name = paste("Time window of ", yrs[i]))
+  dev.off()
+}
+
+
+# plots combined for at least 3 shocks
+for(i in 1:length(yrs)){
+  # at least one resource
+  one_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_5, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_5, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_5")
+  
+  one_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_10, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_10, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_10")
+  
+  one_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_one_change_25, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_one_change_25, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("one_25")
+  
+  # at least two resources
+  two_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_5, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_5")
+  
+  two_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_10, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_10")
+  
+  two_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_two_change_25, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_25, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("two_25")
+  
+  # at least three resources
+  three_5 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_5, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_5, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_5")
+  
+  three_10 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_10, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_two_change_10, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) +
+    ylab("three_10")
+  
+  three_25 <- dat %>% filter(time_window == yrs[i]) %>% 
+    ggplot(aes(y = at_least_three_change_25, x = at_least_three_shocks)) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(~ climates, ncol=4) +
+    geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+               aes(y = at_least_three_change_25, x = at_least_three_shocks),
+               col = "red") +
+    theme_bw() + xlim(0,1) + ylim(0,1) +
+    ylab("three_25")
+  
+  # combined plot
+  png(paste0("figures/combined/combined_plots_",yrs[i],"_at_least_three_shocks.png"),
+      width = 8*200, height = 15*200, res = 200)
+  grid.arrange(one_5, one_10, one_25,
+               two_5, two_10, two_25,
+               three_5, three_10, three_25,
+               nrow = 9, 
+               name = paste("Time window of ", yrs[i]))
+  dev.off()
+}
+
+# example plots for cross-sector conditions
+png(paste0("figures/combined/example1.png"),
+    width = 6*200, height = 4*200, res = 200)
+xx <- dat %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+             aes(y = at_least_two_change_25, x = at_least_two_shocks),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probabilty of at least 2 shocks")
+ggMarginal(xx)
+dev.off()
+
+png(paste0("figures/combined/example2.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat %>% filter(time_window == 20) %>% 
+  ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+             aes(y = at_least_two_change_10, x = at_least_one_shock),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probabilty of at least 1 shock") +
+  stat_density2d(aes(colour = ..level..)) + scale_colour_viridis_c(option ="magma") +
+  theme(legend.position = "none")
+dev.off()
+
+png(paste0("figures/combined/example3.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat %>% filter(time_window == 10) %>% 
+  ggplot(aes(y = at_least_three_change_25, x = at_least_two_shocks)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+             aes(y = at_least_three_change_25, x = at_least_two_shocks),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 3 res. changing by >25%") + xlab("Probabilty of at least 2 shocks")
+dev.off()
+
+### Boxplots comparing distributions
+# boxplot for shocks
+png(paste0("figures/combined/shocks_boxplots.png"),
+    width = 7*200, height = 3*200, res = 200)
+dat %>% 
+  dplyr::select(regions, climates, time_window, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+  pivot_longer(4:6, names_to = "type", values_to = "proba") %>% 
+  ggplot(aes(x=as.factor(climates), y=proba, fill=as.factor(time_window))) +
+  geom_boxplot() +
+  facet_wrap(~ factor(type, levels = c("at_least_one_shock","at_least_two_shocks","at_least_three_shocks")), 
+             scales = "free_y") +
+  theme_bw() + ylab("Probability") + xlab("Future climates") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(breaks = c("10","20","30"),
+                    values = c("grey80","grey60","grey40"),
+                    name = "Time window")
+dev.off()
+
+# boxplot for long-term changes
+png(paste0("figures/combined/long-term_change_boxplots.png"),
+    width = 9*200, height = 8*200, res = 200)
+dat %>% 
+  dplyr::select(-at_least_one_shock, -at_least_two_shocks, -at_least_three_shocks) %>% 
+  pivot_longer(4:12, names_to = "type", values_to = "proba") %>% 
+  mutate(threshold = gsub("\\D","",type),
+         at_least = ifelse(str_detect(type, "one"),"one",NA_character_),
+         at_least = ifelse(str_detect(type, "two"),"two",at_least),
+         at_least = ifelse(str_detect(type, "three"),"three",at_least),
+         choices = paste0("at_least_",at_least,"_res. >",threshold, "%")) %>%
+  ggplot(aes(x=climates, y = proba, fill = as.factor(time_window))) +
+  geom_boxplot() +
+  facet_wrap(~ factor(choices, 
+                      levels = c("at_least_one_res. >5%","at_least_two_res. >5%","at_least_three_res. >5%",
+                                 "at_least_one_res. >10%","at_least_two_res. >10%","at_least_three_res. >10%",
+                                 "at_least_one_res. >25%","at_least_two_res. >25%","at_least_three_res. >25%"))) +
+  theme_bw() + ylab("Probability") + xlab("Future climates") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(breaks = c("10","20","30"),
+                    values = c("grey80","grey60","grey40"),
+                    name = "Time window")
+dev.off()
+  
