@@ -85,9 +85,9 @@ for(y in 1:length(yrs)){
   yy <- yy %>% 
     dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
     group_by(climates) %>% 
-    summarize(at_least_one_shock = get_at_least_one(10,at_least_one_shock),
-              at_least_two_shocks = get_at_least_two(10, at_least_two_shocks),
-              at_least_three_shocks = get_at_least_three(10, at_least_three_shocks),
+    summarize(at_least_one_shock = get_at_least_one(2099-yrs[y],at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(2099-yrs[y], at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(2099-yrs[y], at_least_three_shocks),
               time_window = 2099-yrs[y])
   
   if(y==1){shock_proba_g_cs <- yy
@@ -177,9 +177,9 @@ for(y in 1:length(yrs)){
   yy <- yy %>% 
     dplyr::select(regions, climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
     group_by(regions, climates) %>% 
-    summarize(at_least_one_shock = get_at_least_one(10,at_least_one_shock),
-              at_least_two_shocks = get_at_least_two(10, at_least_two_shocks),
-              at_least_three_shocks = get_at_least_three(10, at_least_three_shocks),
+    summarize(at_least_one_shock = get_at_least_one(2099-yrs[y],at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(2099-yrs[y], at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(2099-yrs[y], at_least_three_shocks),
               time_window = 2099-yrs[y])
   
   if(y==1){shock_proba_r_cs <- yy
