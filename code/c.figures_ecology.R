@@ -7,6 +7,7 @@ library(tidyverse)
 library(ggplot2)
 library(gridExtra)
 library(ggExtra)
+library(ggrepel)
 
 
 ################################################################################
@@ -380,46 +381,64 @@ for(i in 1:length(yrs)){
 }
 
 # example plots for cross-sector conditions
-png(paste0("figures/combined/example1.png"),
+png(paste0("figures/combined/example1_label.png"),
     width = 6*200, height = 4*200, res = 200)
-xx <- dat %>% filter(time_window == 30) %>% 
+dat %>% filter(time_window == 10) %>% 
   ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
              aes(y = at_least_two_change_25, x = at_least_two_shocks),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probabilty of at least 2 shocks")
-ggMarginal(xx)
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+  geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_two_change_25>0.5,], aes(label = regions),
+                  size=2, max.overlaps=15)
 dev.off()
 
-png(paste0("figures/combined/example2.png"),
+# example plots for cross-sector conditions
+png(paste0("figures/combined/example2_label.png"),
     width = 6*200, height = 4*200, res = 200)
-dat %>% filter(time_window == 20) %>% 
-  ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
+dat %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
-             aes(y = at_least_two_change_10, x = at_least_one_shock),
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==30,], 
+             aes(y = at_least_two_change_25, x = at_least_two_shocks),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probabilty of at least 1 shock") +
-  stat_density2d(aes(colour = ..level..)) + scale_colour_viridis_c(option ="magma") +
-  theme(legend.position = "none")
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+geom_text_repel(data = dat[dat$time_window==30 & dat$at_least_two_shocks>0.5 & dat$at_least_two_change_25>0.5,], aes(label = regions),
+                size=2, max.overlaps=20)
 dev.off()
 
 png(paste0("figures/combined/example3.png"),
     width = 6*200, height = 4*200, res = 200)
 dat %>% filter(time_window == 10) %>% 
+  ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
+             aes(y = at_least_two_change_10, x = at_least_one_shock),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probability of at least 1 shock") +
+  theme(legend.position = "none")
+dev.off()
+
+png(paste0("figures/combined/example4_labels.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat %>% filter(time_window == 10) %>% 
   ggplot(aes(y = at_least_three_change_25, x = at_least_two_shocks)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==yrs[i],], 
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
              aes(y = at_least_three_change_25, x = at_least_two_shocks),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 3 res. changing by >25%") + xlab("Probabilty of at least 2 shocks")
+  ylab("Probability of at least 3 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+  geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_three_change_25>0.5,], aes(label = regions),
+                  size=2, max.overlaps=15)
 dev.off()
 
 ### Boxplots comparing distributions
