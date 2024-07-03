@@ -8,6 +8,7 @@ library(ggplot2)
 library(gridExtra)
 library(ggExtra)
 library(ggrepel)
+library(GGally)
 
 
 ################################################################################
@@ -508,6 +509,65 @@ long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>%
   pivot_wider(names_from = "type", values_from = "probas")
 dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
 
+### Comparing individual compensation at least one probabilities ----
+# long-term probabilities
+windows <- c(10, 20, 30)
+for(i in 1:length(windows)){
+  png(paste0("figures/combined/compensation_lg_5_probas_correlations_",windows[i],".png"),
+      width = 8*200, height = 7*200, res = 200)
+  dat_mec %>% 
+    dplyr::select(regions, climates, time_window,
+                  at_least_one_5_up, at_least_one_10_up, at_least_one_25_up,
+                  at_least_one_5_down, at_least_one_10_down, at_least_one_25_down) %>%
+    filter(time_window == windows[i]) %>% 
+    ggpairs(columns = c(4,7), aes(color = climates, alpha = 0.5))+
+    ggtitle(paste0("Time window of ",windows[i]," years")) +
+    theme(text = element_text(size = 20))
+  dev.off()
+}
+
+for(i in 1:length(windows)){
+  png(paste0("figures/combined/compensation_lg_10_probas_correlations_",windows[i],".png"),
+      width = 8*200, height = 7*200, res = 200)
+  dat_mec %>% 
+    dplyr::select(regions, climates, time_window,
+                  at_least_one_5_up, at_least_one_10_up, at_least_one_25_up,
+                  at_least_one_5_down, at_least_one_10_down, at_least_one_25_down) %>%
+    filter(time_window == windows[i]) %>% 
+    ggpairs(columns = c(5,8), aes(color = climates, alpha = 0.5))+
+    ggtitle(paste0("Time window of ",windows[i]," years")) +
+    theme(text = element_text(size = 20))
+  dev.off()
+}
+
+for(i in 1:length(windows)){
+  png(paste0("figures/combined/compensation_lg_25_probas_correlations_",windows[i],".png"),
+      width = 8*200, height = 7*200, res = 200)
+  dat_mec %>% 
+    dplyr::select(regions, climates, time_window,
+                  at_least_one_5_up, at_least_one_10_up, at_least_one_25_up,
+                  at_least_one_5_down, at_least_one_10_down, at_least_one_25_down) %>%
+    filter(time_window == windows[i]) %>% 
+    ggpairs(columns = c(6,9), aes(color = climates, alpha = 0.5))+
+    ggtitle(paste0("Time window of ",windows[i]," years")) +
+    theme(text = element_text(size = 20))
+  dev.off()
+}
+
+# short-term probabilities
+windows <- c(10, 20, 30)
+for(i in 1:length(windows)){
+  png(paste0("figures/combined/compensation_shocks_probas_correlations_",windows[i],".png"),
+      width = 8*200, height = 7*200, res = 200)
+  dat_mec %>% 
+    dplyr::select(regions, climates, time_window,
+                  at_least_one_shock_up, at_least_one_shock_down) %>%
+    filter(time_window == windows[i]) %>% 
+    ggpairs(columns = 4:5, aes(color = climates, alpha = 0.5)) +
+    ggtitle(paste0("Time window of ",windows[i]," years")) +
+    theme(text = element_text(size = 20))
+  dev.off()
+}
 
 ### A. Boxplots comparing distributions ----
 # boxplot for shocks
@@ -551,7 +611,8 @@ dat_mec %>%
                     name = "Time window")
 dev.off()
 
-# example plots of cross-sector change: synchrony
+### B. example plots of cross-sector change mechanisms ----
+# Synchrony
 png(paste0("figures/combined/synchrony_probas_example2.png"),
     width = 6*200, height = 4*200, res = 200)
 dat_mec %>% filter(time_window == 30) %>% 

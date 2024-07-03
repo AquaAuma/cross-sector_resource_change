@@ -173,7 +173,9 @@ for(y in 1:length(yrs)){
   cc <- left_join(cc_up, cc_down) %>% 
     mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
     group_by(climates) %>% 
-    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down))
+    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down),
+              at_least_one_shock_up = get_at_least_one(2099-yrs[y], at_least_one_shock_up),
+              at_least_one_shock_down = get_at_least_one(2099-yrs[y], at_least_one_shock_down))
   
   yy <- left_join(ss, cc)
   
@@ -348,7 +350,9 @@ for(y in 1:length(yrs)){
   cc <- left_join(cc_up, cc_down) %>% 
     mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
     group_by(regions, climates) %>% 
-    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down))
+    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down),
+              at_least_one_shock_up = get_at_least_one(2099-yrs[y], at_least_one_shock_up),
+              at_least_one_shock_down = get_at_least_one(2099-yrs[y], at_least_one_shock_down))
   
   yy <- left_join(ss, cc)
   
