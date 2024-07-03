@@ -1,5 +1,5 @@
 #### Manuscript figures
-#### Coding: Aurore A. Maureaud, June 2024
+#### Coding: Aurore A. Maureaud, July 2024
 
 # load libraries
 library(here)
@@ -483,3 +483,135 @@ dat %>%
                     name = "Time window")
 dev.off()
   
+
+
+################################################################################
+#### 2. ARE COUNTRIES EXPERIENCING SYNCHRONY AND/OR COMPENSATION?
+################################################################################
+## load data
+# countries
+shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_2010-2019_probas_mechanisms.csv")
+change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_2010-2019_probas_mechanisms.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_2010-2019_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_2010-2019_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec)
+long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+
+
+### A. Boxplots comparing distributions ----
+# boxplot for shocks
+png(paste0("figures/combined/shocks_boxplots_mec.png"),
+    width = 7*200, height = 3*200, res = 200)
+dat_mec %>% 
+  dplyr::select(regions, climates, time_window, at_least_two_shocks_down, at_least_one_shock_up_down) %>% 
+  pivot_longer(4:5, names_to = "type", values_to = "proba") %>% 
+  ggplot(aes(x=as.factor(climates), y=proba, fill=as.factor(time_window))) +
+  geom_boxplot() +
+  facet_wrap(~ factor(type, levels = c("at_least_two_shocks_down","at_least_one_shock_up_down")), 
+             scales = "free_y") +
+  theme_bw() + ylab("Probability") + xlab("Future climates") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(breaks = c("10","20","30"),
+                    values = c("grey80","grey60","grey40"),
+                    name = "Time window")
+dev.off()
+
+# boxplot for long-term changes
+png(paste0("figures/combined/long-term_change_boxplots_mec.png"),
+    width = 9*200, height = 8*200, res = 200)
+dat_mec %>% 
+  dplyr::select(-at_least_two_shocks_down, -at_least_three_shocks_down, -at_least_one_shock_up_down) %>% 
+  pivot_longer(4:12, names_to = "type", values_to = "proba") %>% 
+  mutate(threshold = gsub("\\D","",type),
+         at_least = ifelse(str_detect(type, "one"),"one",NA_character_),
+         at_least = ifelse(str_detect(type, "two"),"two",at_least),
+         at_least = ifelse(str_detect(type, "three"),"three",at_least),
+         choices = paste0("at_least_",at_least,"_res. >",threshold, "%")) %>%
+  ggplot(aes(x=climates, y = proba, fill = as.factor(time_window))) +
+  geom_boxplot() +
+  facet_wrap(~ factor(type, levels = c("at_least_one_5_up_down", "at_least_one_10_up_down", "at_least_one_25_up_down",
+                                "at_least_two_5_down","at_least_two_10_down","at_least_two_25_down",
+                                "at_least_three_5_down","at_least_three_10_down","at_least_three_25_down")),
+             dir = "v") +
+  theme_bw() + ylab("Probability") + xlab("Future climates") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(breaks = c("10","20","30"),
+                    values = c("grey80","grey60","grey40"),
+                    name = "Time window")
+dev.off()
+
+# example plots of cross-sector change: synchrony
+png(paste0("figures/combined/synchrony_probas_example2.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat_mec %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_two_10_down, x = at_least_two_shocks_down)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat_mec[dat_mec$regions=="global" & dat_mec$time_window==30,], 
+             aes(y = at_least_two_10_down, x = at_least_two_shocks_down),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. decreasing by 10%") + xlab("Probability of at least 2 decreasing shocks") +
+  geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_two_10_down>0.5 & dat_mec$at_least_two_shocks_down>0.5,], 
+                  aes(label = regions), size=2, max.overlaps=15)
+dev.off()
+
+# example plots of cross-sector change: compensation
+png(paste0("figures/combined/compensation_probas_example1.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat_mec %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_one_10_up_down, x = at_least_one_shock_up_down)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat_mec[dat_mec$regions=="global" & dat_mec$time_window==30,], 
+             aes(y = at_least_one_10_up_down, x = at_least_two_10_down),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by 10% compensate") + xlab("Probability of at least two compensating shocks") +
+  geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_one_shock_up_down>0.5 & dat_mec$at_least_one_10_up_down>0.5,], 
+                  aes(label = regions), size=2, max.overlaps=15)
+dev.off()
+
+# example plots cross-sector synchrony versus compensation long-term
+png(paste0("figures/combined/compensation_synchrony_long-term_example1.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat_mec %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_one_10_up_down, x = at_least_two_10_down)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat_mec[dat_mec$regions=="global" & dat_mec$time_window==30,], 
+             aes(y = at_least_one_10_up_down, x = at_least_two_10_down),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by 10% compensate") + xlab("Probability of at least 2 resources change by 10%") +
+  geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_one_shock_up_down>0.5 & dat_mec$at_least_one_10_up_down>0.5,], 
+                  aes(label = regions), size=2, max.overlaps=15)
+dev.off()
+
+# example plots cross-sector synchrony versus compensation short-term
+png(paste0("figures/combined/compensation_synchrony_short-term_example1.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat_mec %>% filter(time_window == 30) %>% 
+  ggplot(aes(y = at_least_two_shocks_down, x = at_least_one_shock_up_down)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ climates) +
+  geom_point(data = dat_mec[dat_mec$regions=="global" & dat_mec$time_window==30,], 
+             aes(y = at_least_two_shocks_down, x = at_least_one_shock_up_down),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 decreasing shocks") + xlab("Probability of at least 2 shocks compensate") +
+  geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_two_shocks_down>0.5 & dat_mec$at_least_one_shock_up_down>0.5,], 
+                  aes(label = regions), size=2, max.overlaps=15)
+dev.off()
+

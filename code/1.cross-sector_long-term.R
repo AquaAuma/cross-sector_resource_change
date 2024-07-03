@@ -19,6 +19,7 @@ source("functions/get_probas.R")
 # avg = average (end of century); g = global; r = region; cs = cross-sector
 pct_diff_ts_g_cs <- read_csv("data/long-term_change/global_time_series_2010-2019_2090-2099_revised.csv")
 
+# A. get the long-term change probabilities ----
 yrs <- c(2069,2079,2089)
 change_proba_g_cs <- data.frame()
 
@@ -61,6 +62,74 @@ for(y in 1:length(yrs)){
 write.csv(change_proba_g_cs, file = "data/long-term_change/global_long-term_change_2010-2019_probas.csv",
           row.names = F)
 
+# B. get long-term change probability synchrony and compensation ----
+yrs <- c(2069,2079,2089)
+change_proba_g_cs_mec <- data.frame()
+
+for(y in 1:length(yrs)){
+  # average of % change across the last 10 years of the time-series
+  yy <- pct_diff_ts_g_cs %>% 
+    filter(years>yrs[y],
+           years<2100,
+           !output_variable %in% c("ptotww","tcb","tws")) %>% 
+    group_by(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable) %>% 
+    summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+    mutate(change_5_up = ifelse(percent_diff>5 & output_variable!="qtot", 1, 0),
+           change_10_up = ifelse(percent_diff>10 & output_variable!="qtot", 1, 0),
+           change_25_up = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+           change_5_down = ifelse(percent_diff<(-5), 1, 0),
+           change_10_down = ifelse(percent_diff<(-10), 1, 0),
+           change_25_down = ifelse(percent_diff<(-25), 1, 0),
+           # transform increase in water into negative change
+           change_5_down = ifelse(percent_diff>5 & output_variable=="qtot", 1, change_5_down),
+           change_10_down = ifelse(percent_diff>10 & output_variable=="qtot", 1, change_10_down),
+           change_25_down = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_down)) %>% 
+    group_by(sector, spatial_scale, climate_model, experiment_climate, output_variable) %>% 
+    summarize(change_5_up = round(mean(change_5_up, na.rm=T),4),
+              change_10_up = round(mean(change_10_up, na.rm=T),4),
+              change_25_up = round(mean(change_25_up, na.rm=T),4),
+              change_5_down = round(mean(change_5_down, na.rm=T),4),
+              change_10_down = round(mean(change_10_down, na.rm=T),4),
+              change_25_down = round(mean(change_25_down, na.rm=T),4)) %>% 
+    mutate(climates = paste(climate_model, experiment_climate))%>% 
+    group_by(spatial_scale, climates) %>% 
+    summarize(# get at least one res. up proba
+              at_least_one_5_up = get_at_least_one(6, change_5_up),
+              at_least_one_10_up = get_at_least_one(6, change_10_up),
+              at_least_one_25_up = get_at_least_one(6, change_25_up),
+              # get at least one res. down proba
+              at_least_one_5_down = get_at_least_one(6, change_5_down),
+              at_least_one_10_down = get_at_least_one(6, change_10_down),
+              at_least_one_25_down = get_at_least_one(6, change_25_down),
+              # get at least one res. up and one res. down proba
+              at_least_one_5_up_down = at_least_one_5_up*at_least_one_5_down,
+              at_least_one_10_up_down = at_least_one_10_up*at_least_one_10_down,
+              at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down,
+              # get at least two res. down proba
+              at_least_two_5_down = get_at_least_two(6, change_5_down),
+              at_least_two_10_down = get_at_least_two(6, change_10_down),
+              at_least_two_25_down = get_at_least_two(6, change_25_down),
+              # get at least three res. down proba
+              at_least_three_5_down = get_at_least_three(6, change_5_down),
+              at_least_three_10_down = get_at_least_three(6, change_10_down),
+              at_least_three_25_down = get_at_least_three(6, change_25_down)) %>% 
+    dplyr::select(spatial_scale, climates, at_least_one_5_up_down, at_least_one_10_up_down,
+                  at_least_one_25_up_down, at_least_two_5_down, at_least_two_10_down,
+                  at_least_two_25_down, at_least_three_5_down, at_least_three_10_down,
+                  at_least_three_25_down) %>% 
+    pivot_longer(3:11, names_to = "type", values_to = "probas") %>% 
+    mutate(time_window = 2099-yrs[y])
+  
+  if(y==1){change_proba_g_cs_mec <- yy
+  } else {change_proba_g_cs_mec <- rbind(change_proba_g_cs_mec,yy)}
+  rm(yy)
+  
+}
+
+# save outputs
+write.csv(change_proba_g_cs_mec, file = "data/long-term_change/global_long-term_change_2010-2019_probas_mechanisms.csv",
+          row.names = F)
+
 
 ################################################################################
 #### 2. COUNTRY CS CHANGE
@@ -68,6 +137,7 @@ write.csv(change_proba_g_cs, file = "data/long-term_change/global_long-term_chan
 # load time-series data
 pct_diff_ts_r_cs <- read_csv("data/long-term_change/countries_time_series_2010-2019_2090-2099_revised.csv")
 
+# A. get the long-term change probabilities ----
 yrs <- c(2069,2079,2089)
 change_proba_r_cs <- data.frame()
 
@@ -112,4 +182,75 @@ for(y in 1:length(yrs)){
 
 # save outputs
 write.csv(change_proba_r_cs, file = "data/long-term_change/countries_long-term_change_2010-2019_probas.csv",
+          row.names = F)
+
+# B. get long-term change probability synchrony and compensation ----
+yrs <- c(2069,2079,2089)
+change_proba_r_cs_mec <- data.frame()
+
+for(y in 1:length(yrs)){
+  # average of % change across the last 10 years of the time-series
+  yy <- pct_diff_ts_r_cs %>% 
+    filter(years>yrs[y],
+           years<2100,
+           !output_variable %in% c("ptotww","tcb","tws")) %>% 
+    group_by(sector, spatial_scale, regions, eco_model, climate_model, experiment_climate, output_variable) %>% 
+    summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+    mutate(change_5_up = ifelse(percent_diff>5 & output_variable!="qtot", 1, 0),
+           change_10_up = ifelse(percent_diff>10 & output_variable!="qtot", 1, 0),
+           change_25_up = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+           change_5_up = ifelse(is.na(percent_diff) & output_variable=="qtot", NA, change_5_up),
+           change_10_up = ifelse(is.na(percent_diff) & output_variable=="qtot", NA, change_10_up),
+           change_25_up = ifelse(is.na(percent_diff) & output_variable=="qtot", NA, change_25_up),
+           change_5_down = ifelse(percent_diff<(-5), 1, 0),
+           change_10_down = ifelse(percent_diff<(-10), 1, 0),
+           change_25_down = ifelse(percent_diff<(-25), 1, 0),
+           # transform increase in water into negative change
+           change_5_down = ifelse(percent_diff>5 & output_variable=="qtot", 1, change_5_down),
+           change_10_down = ifelse(percent_diff>10 & output_variable=="qtot", 1, change_10_down),
+           change_25_down = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_down)) %>% 
+    group_by(sector, spatial_scale, regions, climate_model, experiment_climate, output_variable) %>% 
+    summarize(change_5_up = round(mean(change_5_up, na.rm=T),4),
+              change_10_up = round(mean(change_10_up, na.rm=T),4),
+              change_25_up = round(mean(change_25_up, na.rm=T),4),
+              change_5_down = round(mean(change_5_down, na.rm=T),4),
+              change_10_down = round(mean(change_10_down, na.rm=T),4),
+              change_25_down = round(mean(change_25_down, na.rm=T),4)) %>% 
+    mutate(climates = paste(climate_model, experiment_climate)) %>% 
+    group_by(spatial_scale, regions, climates) %>% 
+    summarize(# get at least one res. up proba
+      at_least_one_5_up = get_at_least_one(6, change_5_up),
+      at_least_one_10_up = get_at_least_one(6, change_10_up),
+      at_least_one_25_up = get_at_least_one(6, change_25_up),
+      # get at least one res. down proba
+      at_least_one_5_down = get_at_least_one(6, change_5_down),
+      at_least_one_10_down = get_at_least_one(6, change_10_down),
+      at_least_one_25_down = get_at_least_one(6, change_25_down),
+      # get at least one res. up and one res. down proba
+      at_least_one_5_up_down = at_least_one_5_up*at_least_one_5_down,
+      at_least_one_10_up_down = at_least_one_10_up*at_least_one_10_down,
+      at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down,
+      # get at least two res. down proba
+      at_least_two_5_down = get_at_least_two(6, change_5_down),
+      at_least_two_10_down = get_at_least_two(6, change_10_down),
+      at_least_two_25_down = get_at_least_two(6, change_25_down),
+      # get at least three res. down proba
+      at_least_three_5_down = get_at_least_three(6, change_5_down),
+      at_least_three_10_down = get_at_least_three(6, change_10_down),
+      at_least_three_25_down = get_at_least_three(6, change_25_down)) %>% 
+    dplyr::select(spatial_scale, climates, at_least_one_5_up_down, at_least_one_10_up_down,
+                  at_least_one_25_up_down, at_least_two_5_down, at_least_two_10_down,
+                  at_least_two_25_down, at_least_three_5_down, at_least_three_10_down,
+                  at_least_three_25_down) %>% 
+    pivot_longer(4:12, names_to = "type", values_to = "probas") %>% 
+    mutate(time_window = 2099-yrs[y])
+  
+  if(y==1){change_proba_r_cs_mec <- yy
+  } else {change_proba_r_cs_mec <- rbind(change_proba_r_cs_mec,yy)}
+  rm(yy)
+  
+}
+
+# save outputs
+write.csv(change_proba_r_cs_mec, file = "data/long-term_change/countries_long-term_change_2010-2019_probas_mechanisms.csv",
           row.names = F)

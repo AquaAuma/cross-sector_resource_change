@@ -2,6 +2,8 @@
 #### Coding: Aurore A. Maureaud, June 2024
 #### For more information about methods testing, see shock_detection.Rmd file
 
+rm(list=ls())
+
 # load libraries
 library(here)
 library(tidyverse)
@@ -22,6 +24,7 @@ pct_diff_ts_g_cs <- read_csv("data/long-term_change/global_time_series_2010-2019
 ids <- sort(unique(pct_diff_ts_g_cs$id))
 shock_ts_g_cs <- data.frame()
 
+# A. count shocks ----
 for(i in 1:length(ids)){
   
   # subset data
@@ -41,31 +44,33 @@ for(i in 1:length(ids)){
     
     # count shocks
     xx <- xx %>% 
-      mutate(shock = ifelse(res>2, 1, NA),
+      mutate(shock = ifelse(res>2, 1, 0),
              shock = ifelse(res<(-2), 1, shock),
-             shock_up = ifelse(res>2, 1, NA),
-             shock_down = ifelse(res<(-2), 1, NA))
+             shock_up = ifelse(res>2, 1, 0),
+             shock_down = ifelse(res<(-2), 1, 0))
+    
+    rm(model_smooth)
   }
   
   if(i==1){shock_ts_g_cs <- xx}
   if(i>1){shock_ts_g_cs <- rbind(shock_ts_g_cs, xx)}
   
-  rm(xx, model_smooth)
+  rm(xx)
 }
 
 write.csv(shock_ts_g_cs, file = "data/short-term_change/global_shocks_time_series_2010-2019.csv", row.names = F)
 
-# get shocks metrics across models, sectors, and time
+# B. get probabilities of shock occurrence across models, sectors and time ----
 xx <- read_csv("data/short-term_change/global_shocks_time_series_2010-2019.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
-  mutate(shock = ifelse(is.na(shock),0,shock),
-         shock_up = ifelse(is.na(shock_up),0,shock_up),
-         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
+  # mutate(shock = ifelse(is.na(shock),0,shock),
+  #        shock_up = ifelse(is.na(shock_up),0,shock_up),
+  #        shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(climates, years, output_variable) %>% 
-  summarize(shock = round(mean(shock),4),
-            shock_down = round(mean(shock_down),4),
-            shock_up = round(mean(shock_up),4)) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),4),
+            shock_down = round(mean(shock_down, na.rm=T),4),
+            shock_up = round(mean(shock_up, na.rm=T),4)) %>% 
   dplyr::select(climates, years, output_variable, shock) %>% 
   pivot_wider(names_from = output_variable, values_from = shock) %>% 
   data.frame() 
@@ -98,6 +103,88 @@ for(y in 1:length(yrs)){
 write.csv(shock_proba_g_cs, file = "data/short-term_change/global_shocks_2010-2019_probas.csv", 
           row.names = F)
 
+# C. get probabilities of synchrony across models, sectors and time ----
+xx <- read_csv("data/short-term_change/global_shocks_time_series_2010-2019.csv")%>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
+  mutate(
+         # shock = ifelse(is.na(shock),0,shock),
+         # shock_up = ifelse(is.na(shock_up),0,shock_up),
+         # shock_down = ifelse(is.na(shock_down),0,shock_down),
+         # transform water shocks into negative shocks
+         # crop and fish shocks remain positive if increasing and negative is decreasing
+         shock_positive = ifelse(output_variable=="qtot", 0, shock_up),
+         shock_negative = ifelse(output_variable=="qtot" & shock_up==1, 1, shock_down),
+         shock_sign = ifelse(shock_up>0, shock, -shock_down)) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>%
+  group_by(climates, years, output_variable) %>% 
+  summarize(shock_negative = round(mean(shock_negative),4),
+            shock_positive = round(mean(shock_positive),4),
+            shock_sign = round(mean(shock_sign),4))
+
+yrs <- c(2069,2079,2089)
+shock_proba_g_cs_mec <- data.frame()
+for(y in 1:length(yrs)){
+  
+  # negative synchrony
+  ss <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(climates, years, output_variable, shock_negative) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    data.frame()
+  
+  ss$at_least_two_shocks_down <- ss$at_least_three_shocks_down <- NA
+  ss$at_least_two_shocks_down <- apply(ss[,3:8], 1, function(x) get_at_least_two(6,x))
+  ss$at_least_three_shocks_down <- apply(ss[,3:8], 1, function(x) get_at_least_three(6,x))
+  
+  ss <- ss %>% 
+    dplyr::select(climates, years, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
+    group_by(climates) %>% 
+    summarize(at_least_two_shocks_down = get_at_least_one(2099-yrs[y], at_least_two_shocks_down),
+              at_least_three_shocks_down = get_at_least_one(2099-yrs[y], at_least_three_shocks_down),
+              time_window = 2099-yrs[y])
+  
+  # compensation
+  # P(at least one shock up)
+  cc_up <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(climates, years, output_variable, shock_positive) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_positive) %>% 
+    data.frame()
+  
+  cc_up$at_least_one_shock_up <- NA
+  cc_up$at_least_one_shock_up <- apply(cc_up[,3:8], 1, function(x) get_at_least_one(6,x))
+  cc_up$maize <- cc_up$qtot <- cc_up$rice <- cc_up$soybean <- cc_up$tcblog10 <- cc_up$wheat <- NULL
+  
+  # P(at least one shock down)
+  cc_down <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(climates, years, output_variable, shock_negative) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    data.frame()
+  
+  cc_down$at_least_one_shock_down <- NA
+  cc_down$at_least_one_shock_down <- apply(cc_down[,3:8], 1, function(x) get_at_least_one(6,x))
+  cc_down$maize <- cc_down$qtot <- cc_down$rice <- cc_down$soybean <- cc_down$tcblog10 <- cc_down$wheat <- NULL
+  
+  # P(at least one shock up and one shock down)
+  cc <- left_join(cc_up, cc_down) %>% 
+    mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
+    group_by(climates) %>% 
+    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down))
+  
+  yy <- left_join(ss, cc)
+  
+  if(y==1){shock_proba_g_cs_mec <- yy
+  } else {shock_proba_g_cs_mec <- rbind(shock_proba_g_cs_mec,yy)}
+  rm(yy)
+}
+
+write.csv(shock_proba_g_cs_mec, file = "data/short-term_change/global_shocks_2010-2019_probas_mechanisms.csv", 
+          row.names = F)
+
 
 ################################################################################
 #### 2. COUNTRY SHOCKS
@@ -110,6 +197,7 @@ pct_diff_ts_r_cs <- read_csv("data/long-term_change/countries_time_series_2010-2
 ids <- sort(unique(pct_diff_ts_r_cs$id))
 shock_ts_r_cs <- data.frame()
 
+# A. count shocks ----
 for(i in 1:length(ids)){
   
   # print id
@@ -132,10 +220,10 @@ for(i in 1:length(ids)){
     
     # count shocks
     xx <- xx %>% 
-      mutate(shock = ifelse(res>2, 1, NA),
+      mutate(shock = ifelse(res>2, 1, 0),
              shock = ifelse(res<(-2), 1, shock),
-             shock_up = ifelse(res>2, 1, NA),
-             shock_down = ifelse(res<(-2), 1, NA))
+             shock_up = ifelse(res>2, 1, 0),
+             shock_down = ifelse(res<(-2), 1, 0))
     rm(model_smooth)
   }
   
@@ -147,12 +235,12 @@ for(i in 1:length(ids)){
 
 write.csv(shock_ts_r_cs, file = "data/short-term_change/countries_shocks_time_series_2010-2019.csv", row.names = F)
 
-# get shocks metrics across models, sectors, and time
+# B. get probabilities of shock occurrence across models, sectors and time ----
 xx <- read_csv("data/short-term_change/countries_shocks_time_series_2010-2019.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
-  mutate(shock = ifelse(is.na(shock),0,shock),
-         shock_up = ifelse(is.na(shock_up),0,shock_up),
-         shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
+  # mutate(shock = ifelse(is.na(shock),0,shock),
+  #        shock_up = ifelse(is.na(shock_up),0,shock_up),
+  #        shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
   summarize(shock = round(mean(shock),4),
@@ -190,3 +278,84 @@ for(y in 1:length(yrs)){
 write.csv(shock_proba_r_cs, file = "data/short-term_change/countries_shocks_2010-2019_probas.csv", 
           row.names = F)
 
+# C. get probabilities of synchrony across models, sectors and time ----
+xx <- read_csv("data/short-term_change/countries_shocks_time_series_2010-2019.csv")%>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
+  mutate(
+         shock = ifelse(is.na(shock),0,shock),
+         shock_up = ifelse(is.na(shock_up),0,shock_up),
+         shock_down = ifelse(is.na(shock_down),0,shock_down),
+         # transform water shocks into negative shocks
+         # crop and fish shocks remain positive if increasing and negative is decreasing
+         shock_positive = ifelse(output_variable=="qtot", 0, shock_up),
+         shock_negative = ifelse(output_variable=="qtot" & shock_up==1, 1, shock_down),
+         shock_sign = ifelse(shock_up>0, shock, -shock_down)) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>%
+  group_by(regions, climates, years, output_variable) %>% 
+  summarize(shock_negative = round(mean(shock_negative),4),
+            shock_positive = round(mean(shock_positive),4),
+            shock_sign = round(mean(shock_sign),4))
+
+yrs <- c(2069,2079,2089)
+shock_proba_r_cs_mec <- data.frame()
+for(y in 1:length(yrs)){
+  
+  # negative synchrony
+  ss <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    data.frame()
+  
+  ss$at_least_two_shocks_down <- ss$at_least_three_shocks_down <- NA
+  ss$at_least_two_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_two(6,x))
+  ss$at_least_three_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_three(6,x))
+  
+  ss <- ss %>% 
+    dplyr::select(regions, climates, years, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
+    group_by(regions, climates) %>% 
+    summarize(at_least_two_shocks_down = get_at_least_one(2099-yrs[y], at_least_two_shocks_down),
+              at_least_three_shocks_down = get_at_least_one(2099-yrs[y], at_least_three_shocks_down),
+              time_window = 2099-yrs[y])
+  
+  # compensation
+  # P(at least one shock up)
+  cc_up <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(regions, climates, years, output_variable, shock_positive) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_positive) %>% 
+    data.frame()
+  
+  cc_up$at_least_one_shock_up <- NA
+  cc_up$at_least_one_shock_up <- apply(cc_up[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_up$maize <- cc_up$qtot <- cc_up$rice <- cc_up$soybean <- cc_up$tcblog10 <- cc_up$wheat <- NULL
+  
+  # P(at least one shock down)
+  cc_down <- xx %>% 
+    filter(years>yrs[y],
+           years<2100) %>% 
+    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    data.frame()
+  
+  cc_down$at_least_one_shock_down <- NA
+  cc_down$at_least_one_shock_down <- apply(cc_down[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_down$maize <- cc_down$qtot <- cc_down$rice <- cc_down$soybean <- cc_down$tcblog10 <- cc_down$wheat <- NULL
+  
+  # P(at least one shock up and one shock down)
+  cc <- left_join(cc_up, cc_down) %>% 
+    mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
+    group_by(regions, climates) %>% 
+    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down))
+  
+  yy <- left_join(ss, cc)
+  
+  if(y==1){shock_proba_r_cs_mec <- yy
+  } else {shock_proba_r_cs_mec <- rbind(shock_proba_r_cs_mec,yy)}
+  rm(yy)
+}
+
+write.csv(shock_proba_r_cs_mec, file = "data/short-term_change/countries_shocks_2010-2019_probas_mechanisms.csv", 
+          row.names = F)
