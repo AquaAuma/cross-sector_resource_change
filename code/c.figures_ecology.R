@@ -676,3 +676,15 @@ dat_mec %>% filter(time_window == 30) %>%
                   aes(label = regions), size=2, max.overlaps=15)
 dev.off()
 
+# correlations between metrics
+png(paste0("figures/combined/correlation_compensation_synchrony_30years.png"),
+    width = 9*200, height = 7*200, res = 200)
+dat_mec %>% filter(time_window == 30) %>% 
+  dplyr::select(regions, climates, 
+                at_least_two_shocks_down, at_least_one_shock_up_down,
+                at_least_two_10_down, at_least_one_10_up_down) %>% 
+  ggpairs(columns = 3:6, aes(color = climates, alpha = 0.5)) +
+  theme(text = element_text(size = 10)) +
+  theme_bw()
+dev.off()
+
