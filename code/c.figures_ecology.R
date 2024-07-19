@@ -1,6 +1,8 @@
 #### Manuscript figures
 #### Coding: Aurore A. Maureaud, July 2024
 
+rm(list = ls())
+
 # load libraries
 library(here)
 library(tidyverse)
@@ -655,7 +657,7 @@ dat_mec %>% filter(time_window == 30) %>%
              aes(y = at_least_one_10_up_down, x = at_least_two_10_down),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by 10% compensate") + xlab("Probability of at least 2 resources change by 10%") +
+  ylab("Probability that at least 2 res. changing by 10+% compensate") + xlab("Probability of at least 2 res. decreasing by 10+%") +
   geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_one_shock_up_down>0.5 & dat_mec$at_least_one_10_up_down>0.5,], 
                   aes(label = regions), size=2, max.overlaps=15)
 dev.off()
@@ -671,7 +673,7 @@ dat_mec %>% filter(time_window == 30) %>%
              aes(y = at_least_two_shocks_down, x = at_least_one_shock_up_down),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 decreasing shocks") + xlab("Probability of at least 2 shocks compensate") +
+  ylab("Probability of at least 2 decreasing shocks") + xlab("Probability of at least 2 compensating shocks") +
   geom_text_repel(data = dat_mec[dat_mec$time_window==30 & dat_mec$at_least_two_shocks_down>0.5 & dat_mec$at_least_one_shock_up_down>0.5,], 
                   aes(label = regions), size=2, max.overlaps=15)
 dev.off()
@@ -688,3 +690,104 @@ dat_mec %>% filter(time_window == 30) %>%
   theme_bw()
 dev.off()
 
+
+################################################################################
+#### 3. SUMMARIZING ECOLOGICAL METRICS TO FIND WORSE-CASE SCENARIOS
+################################################################################
+
+### A. load data for short- and long-term changes ----
+# countries
+shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_2010-2019_probas.csv")
+change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_2010-2019_probas.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_2010-2019_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_2010-2019_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
+long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+
+### B. load data for compensatory and synchronous mechanisms ----
+# countries
+shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_2010-2019_probas_mechanisms.csv")
+change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_2010-2019_probas_mechanisms.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_2010-2019_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_2010-2019_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec)
+long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+
+### C. Data across metrics ----
+# cbind both datasets
+dat_ecology <- left_join(dat, dat_mec, by = c("regions", "climates", "time_window")) %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(regions, climates, time_window, 
+                at_least_two_change_10, at_least_two_shocks,
+                at_least_two_10_down, at_least_one_10_up_down,
+                at_least_two_shocks_down, at_least_one_shock_up_down) %>%
+  mutate(at_least_one_10_up_down = 1-at_least_one_10_up_down,
+         at_least_one_shock_up_down = 1-at_least_one_shock_up_down) %>%
+  pivot_longer(4:9, names_to = "type", values_to = "proba") %>% 
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "shock", "long-term"),
+         mechanism = ifelse(str_detect(type, "down")==TRUE, "synchrony", "stability"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism))
+
+write.csv(dat_ecology,
+          file = "data/ecological_data/cross-sector_climate_exposure.csv",
+          row.names = F)
+
+### D. Overview figures ----
+png("figures/combined/rank_countries_exposure_probabilities.png",
+    width = 10*200, height = 7*200, res = 200)
+dat_ecology %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         regions %in% c("United States","France","China","Madagascar","Sudan","Colombia","Canada",
+                        "Australia","Spain","Argentina","Egypt","Germany","Bolivia","Japan",
+                        "Ecuador","Mozambique","Russia","Philippines","Mexico",
+                        "Norway","Brazil","South Africa","Namibia","India","Indonesia",
+                        "Ukraine","Uruguay","Turkey","Sweden","Sri Lanka","Romania",
+                        "Portugal","Pakistan","Nigeria","Netherlands","Libya","Liberia")) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = median), x = proba)) + geom_boxplot() +
+  geom_point(aes(shape = scale, color = mechanism), fill = "grey", stroke = 1) +
+  scale_shape_manual(values = c(21, 24)) +
+  scale_color_manual(values = c("darkorchid2","grey40","forestgreen")) +
+  theme_bw() + 
+  ylab("regions") + xlab("cross-sector exposure probabilities") +
+  facet_wrap(~climates)
+dev.off()
+
+png("figures/combined/rank_countries_exposure_probabilities_combined.png",
+    width = 7*200, height = 7*200, res = 200)
+dat_ecology %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         regions %in% c("United States","France","China","Madagascar","Sudan","Colombia","Canada",
+                        "Australia","Spain","Argentina","Egypt","Germany","Bolivia","Japan",
+                        "Ecuador","Mozambique","Russia","Philippines","Mexico",
+                        "Norway","Brazil","South Africa","Namibia","India","Indonesia",
+                        "Ukraine","Uruguay","Turkey","Sweden","Sri Lanka","Romania",
+                        "Portugal","Pakistan","Nigeria","Netherlands","Libya","Liberia")) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = median), x = proba)) + geom_boxplot() +
+  geom_point(aes(shape = scale, color = mechanism), fill = "grey", stroke = 1) +
+  scale_shape_manual(values = c(21, 24)) +
+  scale_color_manual(values = c("darkorchid2","grey40","forestgreen")) +
+  theme_bw() + 
+  ylab("regions") + xlab("cross-sector exposure probabilities")
+dev.off()
