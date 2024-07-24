@@ -503,12 +503,12 @@ year_end_past <- 2015
 year_start_future <- 2070
 year_end_future <- 2099
 
-write.csv(pct_diff_ts_g_cs, file = paste0("data/long-term_change/global_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
-write.csv(pct_diff_avg_g_cs, file = paste0("data/long-term_change/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
-write.csv(pct_diff_ts_r_cs, file = paste0("data/long-term_change/countries_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
-write.csv(pct_diff_avg_r_cs, file = paste0("data/long-term_change/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
-write.csv(pct_diff_ts_rta_cs, file = paste0("data/long-term_change/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
-write.csv(pct_diff_avg_rta_cs, file = paste0("data/long-term_change/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_ts_g_cs, file = paste0("data/data_processing/global_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_avg_g_cs, file = paste0("data/data_processing/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_ts_r_cs, file = paste0("data/data_processing/countries_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_avg_r_cs, file = paste0("data/data_processing/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_ts_rta_cs, file = paste0("data/data_processing/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+write.csv(pct_diff_avg_rta_cs, file = paste0("data/data_processing/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
 
 
 ################################################################################
@@ -524,6 +524,13 @@ year_start_past <- 1985
 year_end_past <- 2015
 year_start_future <- 2070
 year_end_future <- 2099
+
+pct_diff_ts_g_cs <- data.frame()
+pct_diff_avg_g_cs <- data.frame()
+pct_diff_ts_r_cs <- data.frame()
+pct_diff_avg_r_cs <- data.frame()
+pct_diff_ts_rta_cs <- data.frame()
+pct_diff_avg_rta_cs <- data.frame()
 
 #### A. gather & create information about simulations ----
 for(e in 1:length(eco_model)){
@@ -573,12 +580,7 @@ global <- data.frame() %>%
          experiment_climate = NA_character_,
          percent_diff = NA)
 
-# parallel
-system.time({
-  clust <- makeCluster(2)
-  
-  # for(e in 1:length(eco_model)){
-  for(e in 1:1){
+for(e in 1:length(eco_model)){
     
     print(eco_model[e])
     
@@ -593,8 +595,7 @@ system.time({
              experiment_climate %in% c("ssp126", "ssp585", "historical"),
              output_variable %in% c("tcb","tcblog10"))
     
-    #  for(i in 1:nrow(name.models)){
-    for(i in 4:4){
+    for(i in 1:nrow(name.models)){
       
       print(i)
       
@@ -604,9 +605,8 @@ system.time({
         var_array <- ncvar_get(output_i, names(output_i$var))
         
         if(length(dim(var_array))==4){
-          clusterExport(clust, "var_array")
-          if(dim(var_array)[3]==6){var_array2 <- parApply(clust, var_array[,,2:6,], c(1,2,4), sum, na.rm=T)}
-          if(dim(var_array)[3]==5){var_array2 <- parApply(clust, var_array[,,2:5,], c(1,2,4), sum, na.rm=T)}
+          if(dim(var_array)[3]==6){var_array2 <- apply(var_array[,,2:6,], c(1,2,4), sum, na.rm=T)}
+          if(dim(var_array)[3]==5){var_array2 <- apply(var_array[,,2:5,], c(1,2,4), sum, na.rm=T)}
           var_array <- var_array2
         }
         time_i <- get_times(name.models, i)
@@ -618,9 +618,8 @@ system.time({
         var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
         
         if(length(dim(var_hist))==4){
-          clusterExport(clust, "var_hist")
-          if(dim(var_hist)[3]==6){var_hist2 <- parApply(clust, var_hist[,,2:6,], c(1,2,4), sum, na.rm=T)}
-          if(dim(var_hist)[3]==5){var_hist2 <- parApply(clust, var_hist[,,2:5,], c(1,2,4), sum, na.rm=T)}
+          if(dim(var_hist)[3]==6){var_hist2 <- apply(var_hist[,,2:6,], c(1,2,4), sum, na.rm=T)}
+          if(dim(var_hist)[3]==5){var_hist2 <- apply(var_hist[,,2:5,], c(1,2,4), sum, na.rm=T)}
           var_hist <- var_hist2
         }
         # select years after 1982
@@ -679,33 +678,25 @@ system.time({
            vec, t_start_future, t_end_future)
       }
     }
-    
-  }
-  
-  stopCluster(clust)
-})
-
+    save.image("fisheries_processing.RData")
+}
 
 # save the temporal trend data
-yearly_percent_diff <- yearly_percent_diff %>% 
+pct_diff_ts_g_cs <- yearly_percent_diff %>% 
   mutate(spatial_scale = "global",
          sector = sector) %>%
   rename(percent_diff = var_pd) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
-pct_diff_ts_g_cs <- read_csv(paste0("data/long-term_change/global_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_ts_g_cs <- rbind(pct_diff_ts_g_cs, yearly_percent_diff)
-write.csv(pct_diff_ts_g_cs, file = paste0("data/long-term_change/global_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_ts_g_cs, file = paste0("data/data_processing/global_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(yearly_percent_diff, pct_diff_ts_g_cs)
 
 # save the end of the century average data
 names(global)[1:5] <- c("eco_model", "experiment_climate", "climate_model", "output_variable", "percent_diff")
-global <- global %>% 
+pct_diff_avg_g_cs <- global %>% 
   mutate(spatial_scale = "global",
          sector = sector) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
-pct_diff_avg_g_cs <- read_csv(paste0("data/long-term_change/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_avg_g_cs <- rbind(pct_diff_avg_g_cs, global)
-write.csv(pct_diff_avg_g_cs, file = paste0("data/long-term_change/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_avg_g_cs, file = paste0("data/data_processing/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(global, pct_diff_avg_g_cs)
 
 
@@ -723,7 +714,7 @@ time_f <- data.frame(cbind(time, years)) %>%
 # country list
 regions_agg <- sort(unique(regions$SOVEREIGN1))
 
-# aggregation of crop data
+# aggregation at country level
 for(e in 1:length(eco_model)){
   
   print(eco_model[e])
@@ -760,13 +751,9 @@ for(e in 1:length(eco_model)){
       output_i_hist <- nc_open(here(paste0(path, "/", name.models$file.name[h])))
       var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
       if(length(dim(var_hist))==4){
-        n.cores <- detectCores()
-        clust <- makeCluster(n.cores)
-        clusterExport(clust, "var_array")
-        if(dim(var_hist)[3]==6){var_hist2 <- parApply(clust, var_hist[,,2:6,], c(1,2,4), function(x) sum(x, na.rm=T))}
-        if(dim(var_hist)[3]==5){var_hist2 <- parApply(clust, var_hist[,,2:5,], c(1,2,4), function(x) sum(x, na.rm=T))}
+        if(dim(var_hist)[3]==6){var_hist2 <- apply(var_hist[,,2:6,], c(1,2,4), function(x) sum(x, na.rm=T))}
+        if(dim(var_hist)[3]==5){var_hist2 <- apply(var_hist[,,2:5,], c(1,2,4), function(x) sum(x, na.rm=T))}
         var_hist <- var_hist2
-        stopCluster(clust)
       }
       # select years after 1982
       y <- which(time_h$years>1982)
@@ -845,29 +832,25 @@ for(e in 1:length(eco_model)){
          agg_past, t_start_past, t_end_past, vec)
     }
   }
-  #save.image(file = "data/ag_wa_revised_fi.RData")
+  save.image("fisheries_processing.RData")
 }
 
 ## save data
 # save the temporal trend data
-yearly_percent_diff <- yearly_percent_diff %>% 
+pct_diff_ts_r_cs <- yearly_percent_diff %>% 
   mutate(spatial_scale = "regions",
          sector = sector) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_ts_r_cs <- read_csv(paste0("data/long-term_change/countries_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_ts_r_cs <- rbind(pct_diff_ts_r_cs, yearly_percent_diff)
-write.csv(pct_diff_ts_r_cs, file = paste0("data/long-term_change/countries_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_ts_r_cs, file = paste0("data/data_processing/countries_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(yearly_percent_diff, pct_diff_ts_r_cs)
 
 # save the end of the century average data
 names(global)[1:6] <- c("eco_model", "experiment_climate", "climate_model", "output_variable", "percent_diff", "regions")
-global <- global %>% 
+pct_diff_avg_r_cs <- global %>% 
   mutate(spatial_scale = "regions",
          sector = sector) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_ts_r_cs <- read_csv(paste0("data/long-term_change/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_avg_r_cs <- rbind(pct_diff_avg_r_cs, global)
-write.csv(pct_diff_avg_r_cs, file = paste0("data/long-term_change/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_avg_r_cs, file = paste0("data/long-term_change/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(global, pct_diff_avg_r_cs)
 
 
@@ -882,7 +865,10 @@ time <- c(1:length(years))
 time_f <- data.frame(cbind(time, years)) %>% 
   mutate(time = as.character(time))
 
-# aggregation of crop data
+# country list
+regions_agg <- sort(unique(regions$SOVEREIGN1))
+
+# aggregation of fishery data
 for(e in 1:length(eco_model)){
   
   print(eco_model[e])
@@ -899,7 +885,7 @@ for(e in 1:length(eco_model)){
            output_variable %in% c("tcb","tcblog10"))
   
   for(i in 1:nrow(name.models)){
-    
+    print(i)
     if(name.models$experiment_climate[i]!="historical"){
       # read file
       output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
@@ -937,11 +923,13 @@ for(e in 1:length(eco_model)){
       }
       
       # extract ocean data per region and get sum by geographical unit
-      var_region <- array(data=NA, dim=c(length(regions_agg),dim(var_array)[3]))
+      var_region <- array(data=NA, dim=c(length(rtas),dim(var_array)[3]))
       var_array_r <- raster::brick(aperm(var_array, c(2,1,3)), xmn=-180, xmx = 180, ymn=-90, ymx=90)
       var_regions <- as.matrix(exact_extract(var_array_r, regions, "sum"))
-      for(r in 1:length(regions_agg)){
-        k <- which(regions$rta_id == regions_agg[r])
+      for(r in 1:length(rtas)){
+        countries <- dat_rta_list[dat_rta_list$rta_id==rtas[r],]$SOVEREIGN1
+        countries <- countries[!is.na(countries)]
+        k <- which(regions$SOVEREIGN1 %in% countries)
         if(length(k)==1){var_region[r,] <- var_regions[k,]
         } else {var_region[r,] <- apply(var_regions[k,], 2, sum, na.rm=T)}
       }
@@ -951,9 +939,9 @@ for(e in 1:length(eco_model)){
       # aggregate per year if model ran monthly
       if(name.models$time_res[i]=="monthly"){
         var_m <- cbind(time_c, var_region)
-        names(var_m)[4:ncol(var_m)] <- regions_agg
+        names(var_m)[4:ncol(var_m)] <- rtas
         var_m <- var_m %>% 
-          pivot_longer(regions_agg, names_to = "regions", values_to = "biomass") %>% 
+          pivot_longer(as.character(rtas), names_to = "regions", values_to = "biomass") %>% 
           group_by(years, regions) %>% 
           summarize(biomass = mean(biomass, na.rm=T)) %>% 
           pivot_wider(names_from = regions, values_from = biomass)
@@ -977,10 +965,10 @@ for(e in 1:length(eco_model)){
       
       ## % difference per decade
       percent_diff_10y <- data.frame(cbind(var_array, time_f$years))
-      names(percent_diff_10y)[1:length(regions_agg)] <- regions_agg
-      names(percent_diff_10y)[length(regions_agg)+1] <- "years"
+      names(percent_diff_10y)[1:length(rtas)] <- rtas
+      names(percent_diff_10y)[length(rtas)+1] <- "years"
       percent_diff_10y <- percent_diff_10y %>% 
-        pivot_longer(1:length(regions_agg), names_to = "regions", values_to = "percent_diff") %>% 
+        pivot_longer(1:length(rtas), names_to = "regions", values_to = "percent_diff") %>% 
         mutate(eco_model = name.models$eco_model[i],
                climate_model = name.models$climate_model[i],
                experiment_climate = name.models$experiment_climate[i],
@@ -992,36 +980,32 @@ for(e in 1:length(eco_model)){
       # % difference for end decade
       vec <- data.frame(name.models$eco_model[i], name.models$experiment_climate[i], 
                         name.models$climate_model[i], name.models$output_variable[i],
-                        apply(var_array[t_start_future:t_end_future,], 2, mean, na.rm=T), regions_agg)
+                        apply(var_array[t_start_future:t_end_future,], 2, mean, na.rm=T), rtas)
       if(nrow(global)==0){global <- vec} else {global <- rbind(global, vec)}
       
       rm(percent_diff_10y, var_array, t_start_future, t_end_future, 
          agg_past, t_start_past, t_end_past, vec)
     }
   }
-  save.image(file = "data/ag_wa_revised_fi.RData")
+  save.image("fisheries_processing.RData")
 }
 
 ## save data
 # save the temporal trend data
-yearly_percent_diff <- yearly_percent_diff %>% 
+pct_diff_ts_rta_cs <- yearly_percent_diff %>% 
   mutate(spatial_scale = "rta",
          sector = sector) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_ts_rta_cs <- read_csv(paste0("data/long-term_change/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_ts_rta_cs <- rbind(pct_diff_ts_rta_cs, yearly_percent_diff)
-write.csv(pct_diff_ts_rta_cs, file = paste0("data/long-term_change/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_ts_rta_cs, file = paste0("data/data_processing/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(yearly_percent_diff, pct_diff_ts_rta_cs)
 
 # save the end of the century average data
 names(global)[1:6] <- c("eco_model", "experiment_climate", "climate_model", "output_variable", "percent_diff", "regions")
-global <- global %>% 
+pct_diff_avg_rta_cs <- global %>% 
   mutate(spatial_scale = "rta",
          sector = sector) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_avg_rta_cs <- read_csv(paste0("data/long-term_change/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"))
-pct_diff_avg_rta_cs <- rbind(pct_diff_avg_rta_cs, global)
-write.csv(pct_diff_avg_rta_cs, file = paste0("data/long-term_change/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names=F)
+write.csv(pct_diff_avg_rta_cs, file = paste0("data/data_processing/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names=F)
 rm(global, pct_diff_avg_rta_cs)
 
 
@@ -1032,7 +1016,14 @@ rm(global, pct_diff_avg_rta_cs)
 # code options
 create_list_files <- TRUE
 sector <- "water_global"
-eco_model <- c("CWatM","H08","JULES-W2","MIROC-INTEG-LAND","WaterGAP2-2e","WEB-DHM-SG")
+eco_model <- c("CWatM",
+               "H08",
+               "JULES-ES-VN6P3",
+               "JULES-W2",
+               "MIROC-INTEG-LAND",
+               "VISIT",
+               "WaterGAP2-2e",
+               "WEB-DHM-SG")
 year_start_past <- 1985
 year_end_past <- 2015
 year_start_future <- 2070
@@ -1182,21 +1173,21 @@ for(e in 1:length(eco_model)){
 }
 
 # save the temporal trend data
-yearly_percent_diff <- yearly_percent_diff %>% 
+pct_diff_ts_g_cs <- yearly_percent_diff %>% 
   mutate(spatial_scale = "global",
          sector = "water_global") %>%
   rename(percent_diff = var_pd) %>% 
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
-pct_diff_ts_g_cs <- rbind(pct_diff_ts_g_cs, yearly_percent_diff)
+write.csv(pct_diff_ts_g_cs, file = paste0("data/data_processing/global_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
 rm(yearly_percent_diff)
 
 # save the end of the century average data
 names(global)[1:6] <- c("output_variable", "eco_model", "experiment_climate", "climate_model", "experiment_human_forcing", "percent_diff")
-global <- global %>% 
+pct_diff_avg_g_cs  <- global %>% 
   mutate(spatial_scale = "global",
          sector = "water_global") %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, percent_diff)
-pct_diff_avg_g_cs <- rbind(pct_diff_avg_g_cs, global)
+write.csv(pct_diff_avg_g_cs, file = paste0("data/data_processing/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
 rm(global)
 
 
@@ -1204,6 +1195,9 @@ rm(global)
 # output data
 global <- data.frame()
 yearly_percent_diff <- data.frame()
+
+# country list
+regions_agg <- sort(unique(regions$SOVEREIGN1))
 
 # year data
 years <- sort(seq(from=1983, to=2100, by=1))
@@ -1325,41 +1319,165 @@ for(e in 1:length(eco_model)){
 
 ## save data
 # save the temporal trend data
-yearly_percent_diff <- yearly_percent_diff %>% 
+pct_diff_ts_r_cs <- yearly_percent_diff %>% 
   mutate(spatial_scale = "regions",
          sector = "water_global") %>%
   dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_ts_r_cs <- rbind(pct_diff_ts_r_cs, yearly_percent_diff)
+write.csv(pct_diff_ts_r_cs, file = paste0("data/data_processing/countries_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
 rm(yearly_percent_diff)
 
 # save the end of the century average data
 names(global)[1:6] <- c("eco_model", "experiment_climate", "climate_model", "experiment_human_forcing", "output_variable", "percent_diff")
-global <- global %>% 
+pct_diff_avg_r_cs <- global %>% 
   mutate(spatial_scale = "regions",
          sector = "water_global") %>%
   dplyr::rename(regions = regions_agg) %>% 
   dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
-pct_diff_avg_r_cs <- rbind(pct_diff_avg_r_cs, global)
+write.csv(pct_diff_avg_r_cs, file = paste0("data/data_processing/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
 rm(global)
 
 
 #### D. aggregation for regions trade agreement regions ----
+# output data
+global <- data.frame()
+yearly_percent_diff <- data.frame()
+
+# year data
+years <- sort(seq(from=1983, to=2100, by=1))
+time <- c(1:length(years))
+time_f <- data.frame(cbind(time, years)) %>% 
+  mutate(time = as.character(time))
+
+for(e in 1:length(eco_model)){
+  
+  print(eco_model[e])
+  
+  # path to data source
+  path <- paste0("~/Documents/Rutgers University/Minerva/Data/ISIMIP3b/OutputData/",sector,"/",eco_model[e])
+  
+  name.models <- read.csv(paste0(path,"/models.csv")) %>% 
+    mutate(variable = paste(eco_model, climate_model, experiment_climate, experiment_human_forcing, 
+                            experiment_sensitivity, output_variable,
+                            start_year, end_year, sep = "_")) %>% 
+    filter(experiment_human_forcing %in% c("2015soc"),
+           experiment_climate %in% c("ssp126", "ssp585", "historical"),
+           output_variable %in% c("tws","ptotww","qtot"),
+           experiment_sensitivity == "default")
+  
+  if(nrow(name.models)>0){
+    for(i in 1:nrow(name.models)){
+      print(i)
+      
+      if(name.models$experiment_climate[i]!="historical"){
+        # read file
+        output_i <- nc_open(here(paste0(path, "/", name.models$file.name[i])))
+        var_array <- ncvar_get(output_i, names(output_i$var))
+        time_i <- get_times(name.models, i)
+        area_i <- t(as.matrix(grid_cells_areas(var_array)))
+        # add historical simulations 
+        h <- which(name.models$climate_model==name.models$climate_model[i] & name.models$experiment_climate == "historical" & name.models$output_variable==name.models$output_variable[i])
+        time_h <- get_times(name.models, h)
+        output_i_hist <- nc_open(here(paste0(path, "/", name.models$file.name[h])))
+        var_hist <- ncvar_get(output_i_hist, names(output_i_hist$var))
+        # select years after 1982
+        y <- which(time_h$years>1982)
+        var_hist <- var_hist[,,y[1]:dim(var_hist)[3]]
+        # combine historical and future simulations
+        var_array <- abind(var_hist, var_array, along=3)
+        time_c <- get_times_combined(name.models, i, start_year = 1983)
+        rm(y, h, time_h, time_i, var_hist, output_i, output_i_hist)
+        
+        # standardize by grid cell size
+        for(a in 1:dim(var_array)[3]){
+          # area_i in km2, so multiple by 1e6 to get m2
+          var_array[,,a] <- var_array[,,a]*area_i*1e6
+        }
+        
+        # extract crop data per region and get sum by geographical unit
+        var_region <- array(data=NA, dim=c(length(rtas),dim(var_array)[3]))
+        var_array_r <- raster::brick(aperm(var_array, c(2,1,3)), xmn=-180, xmx = 180, ymn=-90, ymx=90)
+        var_regions <- as.matrix(exact_extract(var_array_r, regions, "sum"))
+        for(r in 1:length(rtas)){
+          countries <- dat_rta_list[dat_rta_list$rta_id==rtas[r],]$SOVEREIGN1
+          countries <- countries[!is.na(countries)]
+          k <- which(regions$SOVEREIGN1 %in% countries)
+          if(length(k)==1){var_region[r,] <- var_regions[k,]
+          } else {var_region[r,] <- apply(var_regions[k,], 2, sum, na.rm=T)}
+        }
+        rm(k, var_regions, var_array_r)
+        var_region <- aperm(var_region,c(2,1))
+        
+        # aggregate per year if model ran monthly
+        if(name.models$time_res[i]=="monthly"){
+          var_m <- cbind(time_c, var_region)
+          names(var_m)[4:ncol(var_m)] <- rtas
+          var_m <- var_m %>% 
+            pivot_longer(as.character(rtas), names_to = "regions", values_to = "biomass") %>% 
+            group_by(years, regions) %>% 
+            summarize(biomass = mean(biomass, na.rm=T)) %>% 
+            pivot_wider(names_from = regions, values_from = biomass)
+          var_region <- as.matrix(var_m[,2:ncol(var_m)])
+        }      
+        
+        # get time values
+        t_start_past <- min(which(time_f$years==year_start_past))
+        t_end_past <- max(which(time_f$years==year_end_past))
+        t_start_future <- min(which(time_f$years==year_start_future))
+        t_end_future <- max(which(time_f$years==year_end_future))
+        
+        # average biomass 1990-1999
+        agg_past <- apply(var_region[t_start_past:t_end_past,], 2, mean, na.rm=TRUE)
+        
+        ## get relative values compared to reference period
+        var_array <- array(dim = dim(var_region))
+        for(y in 1:nrow(time_f)){
+          var_array[y,] <- 100*(var_region[y,]-agg_past)/agg_past
+        }
+        
+        ## % difference per decade
+        percent_diff_10y <- data.frame(cbind(var_array, time_f$years))
+        names(percent_diff_10y)[1:length(rtas)] <- rtas
+        names(percent_diff_10y)[length(rtas)+1] <- "years"
+        percent_diff_10y <- percent_diff_10y %>% 
+          pivot_longer(1:length(rtas), names_to = "regions", values_to = "percent_diff") %>% 
+          mutate(eco_model = name.models$eco_model[i],
+                 climate_model = name.models$climate_model[i],
+                 experiment_climate = name.models$experiment_climate[i],
+                 experiment_human_forcing = name.models$experiment_human_forcing[i],
+                 output_variable = name.models$output_variable[i])
+        
+        if(nrow(yearly_percent_diff)==0){yearly_percent_diff <- percent_diff_10y
+        } else {yearly_percent_diff <- rbind(yearly_percent_diff, percent_diff_10y)}
+        
+        # % difference for end decade
+        vec <- data.frame(name.models$eco_model[i], name.models$experiment_climate[i], name.models$climate_model[i], 
+                          name.models$experiment_human_forcing[i], name.models$output_variable[i],
+                          apply(var_array[t_start_future:t_end_future,], 2, mean, na.rm=T), rtas)
+        if(nrow(global)==0){global <- vec} else {global <- rbind(global, vec)}
+        
+        rm(percent_diff_10y, var_array, t_start_past, t_end_past, agg_past, 
+           t_start_future, t_end_future, vec)
+      }
+    }
+  }
+}
+
+## save data
+# save the temporal trend data
+pct_diff_ts_rta_cs <- yearly_percent_diff %>% 
+  mutate(spatial_scale = "rta",
+         sector = "water_global") %>%
+  dplyr::select(sector, years, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
+write.csv(pct_diff_ts_rta_cs, file = paste0("data/data_processing/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+rm(yearly_percent_diff)
+
+# save the end of the century average data
+names(global)[1:6] <- c("eco_model", "experiment_climate", "climate_model", "experiment_human_forcing", "output_variable", "percent_diff")
+pct_diff_avg_rta_cs <- global %>% 
+  mutate(spatial_scale = "rta",
+         sector = "water_global") %>%
+  dplyr::select(sector, spatial_scale, eco_model, climate_model, experiment_climate, output_variable, regions, percent_diff)
+write.csv(pct_diff_avg_rta_cs, file = paste0("data/data_processing/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,"_",sector,".csv"), row.names = F)
+rm(global)
 
 
-################################################################################
-#### 4. SAVING CROSS-SECTOR OUTPUTS
-################################################################################
-year_start_past <- 1985
-year_end_past <- 2015
-year_start_future <- 2070
-year_end_future <- 2099
-
-write.csv(pct_diff_ts_g_cs, file = paste0("data/long-term_change/global_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-write.csv(pct_diff_avg_g_cs, file = paste0("data/long-term_change/global_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-write.csv(pct_diff_ts_r_cs, file = paste0("data/long-term_change/countries_time_series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-write.csv(pct_diff_avg_r_cs, file = paste0("data/long-term_change/countries_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-write.csv(pct_diff_ts_rta_cs, file = paste0("data/long-term_change/rta_time-series_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-write.csv(pct_diff_avg_rta_cs, file = paste0("data/long-term_change/rta_average_",year_start_past,"-",year_end_past,"_",year_start_future,"-",year_end_future,".csv"), row.names = F)
-
-# in case running is long, save environment
-# save.image(file = "data/ag_fi_r_revised.RData")
