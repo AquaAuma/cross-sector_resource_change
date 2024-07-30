@@ -12,6 +12,9 @@ library(ggExtra)
 library(ggrepel)
 library(GGally)
 library(readxl)
+library(sf)
+sf_use_s2(FALSE)
+library(colorspace)
 
 
 ################################################################################
@@ -693,6 +696,88 @@ dat_mec %>% filter(time_window == 30) %>%
   ggpairs(columns = 3:6, aes(color = climates, alpha = 0.5)) +
   theme(text = element_text(size = 10)) +
   theme_bw()
+dev.off()
+
+
+### C. Maps of synchrony/compensation short-term and long-term ----
+
+# eez-land merge shapefile
+regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius") %>% 
+  dplyr::select(UNION, SOVEREIGN1)
+
+# average climate models for ssp585 
+dat_mec_ssp585 <- dat_mec %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr-ssp585"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_one_10_up_down = mean(at_least_one_10_up_down, na.rm=T),
+            at_least_two_10_down = mean(at_least_two_10_down, na.rm=T),
+            at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
+            at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T))
+
+regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions"))
+
+png(paste0("figures/combined/maps_mechanisms_ssp585_climates_averaged.png"),
+    width = 6*200, height = 4*200, res = 200)
+regions_dat %>% 
+  pivot_longer(3:6, names_to = "mechanism", values_to = "probability") %>% 
+  ggplot() + geom_sf(aes(fill = probability)) +
+  facet_wrap(~ mechanism) + 
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "BurgYl") +
+  theme(legend.position = "bottom")
+dev.off()
+
+# average climate models for ssp585 but 25% threshold
+dat_mec_ssp585 <- dat_mec %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr-ssp585"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_one_25_up_down = mean(at_least_one_25_up_down, na.rm=T),
+            at_least_two_25_down = mean(at_least_two_25_down, na.rm=T),
+            at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
+            at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T))
+
+regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions"))
+
+png(paste0("figures/combined/maps_mechanisms_ssp585_climates_averaged_25_threshold.png"),
+    width = 6*200, height = 4*200, res = 200)
+regions_dat %>% 
+  pivot_longer(3:6, names_to = "mechanism", values_to = "probability") %>% 
+  ggplot() + geom_sf(aes(fill = probability)) +
+  facet_wrap(~ mechanism) + 
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "BurgYl") +
+  theme(legend.position = "bottom")
+dev.off()
+
+# average climate models for ssp126
+dat_mec_ssp126 <- dat_mec %>% 
+  filter(climates %in% c("gfdl-esm4 ssp126","ipsl-cm6a-lr-ssp126"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_one_10_up_down = mean(at_least_one_10_up_down, na.rm=T),
+            at_least_two_10_down = mean(at_least_two_10_down, na.rm=T),
+            at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
+            at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T))
+
+regions_dat <- left_join(regions, dat_mec_ssp126, by = c("SOVEREIGN1" = "regions"))
+
+png(paste0("figures/combined/maps_mechanisms_ssp126_climates_averaged.png"),
+    width = 6*200, height = 4*200, res = 200)
+regions_dat %>% 
+  pivot_longer(3:6, names_to = "mechanism", values_to = "probability") %>% 
+  ggplot() + geom_sf(aes(fill = probability)) +
+  facet_wrap(~ mechanism) + 
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "BurgYl") +
+  theme(legend.position = "bottom")
 dev.off()
 
 
