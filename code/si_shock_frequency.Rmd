@@ -1,7 +1,12 @@
 ---
 title: "Check past shock frequency from ISIMIP models"
-output: html_document
-date: "2024-08-05"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -16,18 +21,19 @@ library(ggplot2)
 library(gridExtra)
 ```
 
-Supplementary analysis comparing cross-sector shock frequency estimates across sectors with [Cottrell et al., 2019 *Nature Sustainability*](https://www.nature.com/articles/s41893-018-0210-1).
+Supplementary analysis comparing shock frequency estimates from multiple sectors with [Cottrell et al., 2019 *Nature Sustainability*](https://www.nature.com/articles/s41893-018-0210-1).
 
-Compared to that previous paper, we are not using observational data but simulated data from ISIMIP, covering 6 resources across three sectors (water, fisheries, 4 main crops). The sectors are not the same, since in the Cottrell paper there are also livestock and aquaculture.
+Compared to that previous paper, we are not using observational data but simulated data from ISIMIP, covering 6 resources from three sectors (water, fisheries, maize, rice, soybean, wheat). The sectors are not the same, since in the Cottrell et al. paper there are also livestock and aquaculture in addition to fisheries and agriculture.
 
-## Country shock frequency 
+## Country shock frequency
+
 ### from 1983 until 2013
-To compare our global shock frequency and Figure 1 from Cottrell et al., 2019 panels e and c
-Shock frequencies: proportion of countries experiencing a shock in the specific sector per year
+
+To compare our global shock frequency and Figure 1 from Cottrell et al., 2019 panels e and c, I calculated the proportion of countries experiencing a shock per sector per year per climate model.
 
 Linear models are fitted to temporal trends per output variable and climate model.
 
-```{r cars, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r annual frequencies, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 
   filter(!output_variable %in% c("tws","tcb","ptotww"),
          experiment_climate == "ssp585") %>% 
@@ -54,9 +60,10 @@ annual_freq %>%
 ```
 
 ### until the end of the century
+
 From 1983 until 2100.
 
-```{r end of century, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r long annual frequencies, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 
   filter(!output_variable %in% c("tws","tcb","ptotww"),
          experiment_climate == "ssp585") %>% 
@@ -81,11 +88,11 @@ annual_freq %>%
   scale_color_manual(values = c("darksalmon", "firebrick2"))
 ```
 
-
 ## Cross-sector temporal trends
-Comparing Figure 4 with our estimates for Afghanistan, Dominica, Ecuador, and Kuwait. Black vertical lines indicate the main events that are identified as co-occurring with resource shocks for the specific cases.
 
-```{r 4 country plot, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+To compare Figure 4 from the Cottrell et al., paper, I plotted the temporal trends in resource production for Afghanistan, Dominica, Ecuador, and Kuwait. Black vertical lines indicate the main events that are identified as co-occurring with resource shocks for the specific cases. Sometimes, the same sectors are not plotted in our figure because the resources as not modelled for that specific country. For instance, there are no crops trends for Dominica, because main agricultural products there are not the 4 main crops modelled by ISIMIP.
+
+```{r country plot, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
 pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
 pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
@@ -114,7 +121,8 @@ pct_diff_ts_r_cs %>%
 ```
 
 ## Cross-sector heat map
-Comparing Figure 3 panel b with our estimates for the same list of countries and the two climate models.
+
+To compare Figure 3 panel b with our estimates for the same list of countries and the two climate models, we calculated the number of resources for which a shock is identified by 5-year bins. Although the resources are not the same, we could expect similar cross-sector shock hotspots.
 
 ```{r cs hear map, echo = FALSE, warning=FALSE, message=FALSE}
 annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 

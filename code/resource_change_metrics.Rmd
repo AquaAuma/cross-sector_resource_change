@@ -34,13 +34,13 @@ ts <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa) %>%
 rm(pct_diff_ts_r_cs_wa, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_ag)
 ```
 
-## Long-term gradual change and shock detection
+## Measuring long-term gradual change and short-term shocks
 
-Example dataset for agriculture maize crop yield for CROVER crop model, GFDL-ESM4, SSP 585, and for the United States.
+Data sample for agriculture maize crop yield for the CROVER crop model, GFDL-ESM4, SSP 585, and for the United States. We compare the three main metrics computed:
 
-1.  Long-term change with threshold
-2.  Shock frequency
-3.  End of century average
+1.  End of the century (2070-2099) long-term % difference average compared to a fixed threshold of 5, 10, or 25% (code with gradual purple shades)
+2.  End of century (2070-2099) long-term % difference average compared to the 10th percentile limit from the historical period (1985-2015), which is used as a specific threshold per simulation
+3.  Years with shocks from 2SD of residuals from a smooth loess fit with span of 0.25, 0.5 or 0.75 (yellow, orange, and red fitted lines, respectively). The years and time-series points identified as experiencing a resource shock are colored in yellow, orange, or red.
 
 ```{r metrics, warning=FALSE, message=FALSE, fig.width=10}
 ts_ex <- ts %>% 
@@ -134,9 +134,9 @@ grid.arrange(plot_ts_avg, plot_ts_10th,
              nrow = 2)
 ```
 
-## Percentile and % difference
+## How often are 10th percentile limits reached per sector?
 
-To compare the effect of using the 10th percentile of the historic period, we look at the 10th percentile and the % difference by the end of the century. This plot is excluding outliers when the % difference is higher than 200 etc.
+To understand the effect of using the 10th percentile of the historic period, we look at the 10th percentile and the % difference by the end of the century. This plot is excluding outliers when the % difference is higher than 200 etc.
 
 ```{r percentiles, warning=FALSE, message=FALSE, fig.width=10}
 
@@ -161,6 +161,12 @@ ggplot(percentiles, aes(x = pct, y = avg, color = climates)) + geom_point(alpha 
 ```
 
 ## Cross-sector aggregated metrics
+
+To quantify the cross-sector change, we calculated:
+
+1.  The probability that at least 1, 2, or 3 resources change (sub-panels on the plot) beyond the 5, 10, or 25% fixed threshold per country and climate conditions (coded as 5, 10, and 25 on the x-axis)
+2.  The probability that at least 1, 2, or 3 resources change beyond the 10th percentile of the historical period per country and climate conditions (coded as pct on the x-axis)
+3.  The probability that there are at least one year from 2070-2099 during which at least 1, 2, or 3 resource shocks per country and climate conditions (coded as shock on the x-axis)
 
 ```{r cross-sector probs, warning=FALSE, message=FALSE, fig.width=10, fig.height = 3}
 y <- ts %>% 
@@ -219,6 +225,7 @@ ggplot(yy, aes(x = threshold, y = probas, fill = climates)) + geom_boxplot() +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = -45, hjust=0)) +
   scale_fill_manual(values = c("plum","purple4","lightskyblue","blue")) +
-  scale_x_discrete(limits = c("5","10","25","pct","shock"))
+  scale_x_discrete(limits = c("5","10","25","pct","shock")) +
+  xlab("Metric") + ylab("Country probabilities")
   
 ```
