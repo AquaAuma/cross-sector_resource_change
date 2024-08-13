@@ -1,5 +1,5 @@
 #### Process ISIMIP shocks data across sectors
-#### Coding: Aurore A. Maureaud, July 2024
+#### Coding: Aurore A. Maureaud, August 2024
 #### For more information about methods testing, see shock_detection.Rmd file
 
 rm(list=ls())

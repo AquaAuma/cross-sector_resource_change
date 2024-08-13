@@ -15,16 +15,23 @@ dat_ecology <- read_csv("data/ecological_data/cross-sector_climate_exposure.csv"
 
 # load RTA database
 dat_rta <- read_xls("data/RTA WHO/FTA.xls", sheet = 1) %>% 
-  dplyr::select(`RTA ID`,`RTA Name`,`Status`,
-                `RTA Composition`,`Current signatories`) %>% 
+  dplyr::select(`RTA ID`,`RTA Name`,`Status`,`Accession?`,
+                `RTA Composition`,`Current signatories`,
+                `Region`) %>% 
   rename(rta_id = `RTA ID`,
          rta_name = `RTA Name`,
          status = `Status`,
          composition = `RTA Composition`,
-         signatories = `Current signatories`) %>% 
+         signatories = `Current signatories`,
+         accession = `Accession?`,
+         region = `Region`) %>% 
   filter(composition %in% c("Plurilateral"),
          status %in% c("In Force","In Force for at least one Party",
-                       "Early announcement-Signed"))
+                       "Early announcement-Signed"),
+         accession == "No")
+
+write.csv(dat_rta, file = "data/RTA WHO/RTA_filtered.csv",
+          row.names = F)
 
 
 ################################################################################

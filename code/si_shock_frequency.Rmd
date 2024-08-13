@@ -88,6 +88,14 @@ annual_freq %>%
   scale_color_manual(values = c("darksalmon", "firebrick2"))
 ```
 
+## Country shock frequency with different smooth spans
+
+Repeating the previous analysis with smooth spans for shocks from 0.25 to 0.75.
+
+```{r spans past trends, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+```
+
 ## Cross-sector temporal trends
 
 To compare Figure 4 from the Cottrell et al., paper, I plotted the temporal trends in resource production for Afghanistan, Dominica, Ecuador, and Kuwait. Black vertical lines indicate the main events that are identified as co-occurring with resource shocks for the specific cases. Sometimes, the same sectors are not plotted in our figure because the resources as not modelled for that specific country. For instance, there are no crops trends for Dominica, because main agricultural products there are not the 4 main crops modelled by ISIMIP.

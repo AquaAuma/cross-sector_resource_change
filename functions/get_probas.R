@@ -4,7 +4,9 @@ get_at_least_one <- function(n, proba_n){
 
   # remove NAs from the vector
   proba_n <- proba_n[!is.na(proba_n)]
+  
   if(length(proba_n)<n){n <- length(proba_n)}
+  
   if(length(proba_n)==0){p <- NA
   } else {
     # p(X-0)

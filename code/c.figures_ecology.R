@@ -1,5 +1,5 @@
-#### Manuscript figures
-#### Coding: Aurore A. Maureaud, July 2024
+#### Exploratory figures
+#### Coding: Aurore A. Maureaud, August 2024
 
 rm(list = ls())
 
@@ -39,7 +39,8 @@ change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_19
 shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
 long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
   pivot_wider(names_from = "type", values_from = "probas")
-dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
 
 ### Combining all plots possible
 # plots combined for at least 1 shock
@@ -388,65 +389,87 @@ for(i in 1:length(yrs)){
 }
 
 # example plots for cross-sector conditions
-png(paste0("figures/combined/example1_label.png"),
-    width = 6*200, height = 4*200, res = 200)
-dat %>% filter(time_window == 10) %>% 
-  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
-             aes(y = at_least_two_change_25, x = at_least_two_shocks),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
-  geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_two_change_25>0.5,], aes(label = regions),
-                  size=2, max.overlaps=15)
-dev.off()
+# png(paste0("figures/combined/example1_label.png"),
+#     width = 6*200, height = 4*200, res = 200)
+# dat %>% filter(time_window == 10) %>% 
+#   ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
+#   geom_point(alpha = 0.5) +
+#   facet_wrap(~ climates) +
+#   geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
+#              aes(y = at_least_two_change_25, x = at_least_two_shocks),
+#              col = "red") +
+#   theme_bw() + xlim(0,1) + ylim(0,1) +
+#   ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+#   geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_two_change_25>0.5,], aes(label = regions),
+#                   size=2, max.overlaps=15)
+# dev.off()
 
 # example plots for cross-sector conditions
-png(paste0("figures/combined/figure_1.png"),
+png(paste0("figures/combined/figure_1_10.png"),
     width = 6*200, height = 4*200, res = 200)
-dat %>% filter(time_window == 30) %>% 
-  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
+dat_map <- dat %>% 
+  filter(time_window == 30,
+         !is.na(at_least_two_shocks),
+         !is.na(at_least_two_change_10))
+dat_map %>% 
+  ggplot(aes(y = at_least_two_change_10, x = at_least_two_shocks)) +
   geom_point(alpha = 0.5) +
   facet_wrap(~ climates) +
+  geom_point(data = dat[dat$regions=="global" & dat$time_window==30,], 
+             aes(y = at_least_two_change_10, x = at_least_two_shocks),
+             col = "red") +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probability of at least 2 shocks") +
+geom_text_repel(data = dat_map[dat_map$at_least_two_shocks>0.5 & dat_map$at_least_two_change_10>0.5,], aes(label = regions),                 size=2, max.overlaps=20)
+dev.off()
+
+png(paste0("figures/combined/figure_1_25.png"),
+    width = 6*200, height = 4*200, res = 200)
+dat_map <- dat %>% 
+  filter(time_window == 30,
+         !is.na(at_least_two_shocks),
+         !is.na(at_least_two_change_25))
+dat_map %>% 
+  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
+  geom_point(alpha = 0.5) +
   geom_point(data = dat[dat$regions=="global" & dat$time_window==30,], 
              aes(y = at_least_two_change_25, x = at_least_two_shocks),
              col = "red") +
   theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks")
-# geom_text_repel(data = dat[dat$time_window==30 & dat$at_least_two_shocks>0.5 & dat$at_least_two_change_10>0.5,], aes(label = regions),
-#                 size=2, max.overlaps=20)
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+  ggrepel::geom_text_repel(data = dat_map[dat_map$at_least_two_shocks>0.5 & dat_map$at_least_two_change_25>0.5,], aes(label = regions),
+                size=2, max.overlaps=20) +
+  facet_wrap(~ climates)
 dev.off()
 
-png(paste0("figures/combined/example3.png"),
-    width = 6*200, height = 4*200, res = 200)
-dat %>% filter(time_window == 10) %>% 
-  ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
-             aes(y = at_least_two_change_10, x = at_least_one_shock),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probability of at least 1 shock") +
-  theme(legend.position = "none")
-dev.off()
-
-png(paste0("figures/combined/example4_labels.png"),
-    width = 6*200, height = 4*200, res = 200)
-dat %>% filter(time_window == 10) %>% 
-  ggplot(aes(y = at_least_three_change_25, x = at_least_two_shocks)) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~ climates) +
-  geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
-             aes(y = at_least_three_change_25, x = at_least_two_shocks),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  ylab("Probability of at least 3 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
-  geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_three_change_25>0.5,], aes(label = regions),
-                  size=2, max.overlaps=15)
-dev.off()
+# png(paste0("figures/combined/example3.png"),
+#     width = 6*200, height = 4*200, res = 200)
+# dat %>% filter(time_window == 10) %>% 
+#   ggplot(aes(y = at_least_two_change_10, x = at_least_one_shock)) +
+#   geom_point(alpha = 0.5) +
+#   facet_wrap(~ climates) +
+#   geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
+#              aes(y = at_least_two_change_10, x = at_least_one_shock),
+#              col = "red") +
+#   theme_bw() + xlim(0,1) + ylim(0,1) +
+#   ylab("Probability of at least 2 res. changing by >10%") + xlab("Probability of at least 1 shock") +
+#   theme(legend.position = "none")
+# dev.off()
+# 
+# png(paste0("figures/combined/example4_labels.png"),
+#     width = 6*200, height = 4*200, res = 200)
+# dat %>% filter(time_window == 10) %>% 
+#   ggplot(aes(y = at_least_three_change_25, x = at_least_two_shocks)) +
+#   geom_point(alpha = 0.5) +
+#   facet_wrap(~ climates) +
+#   geom_point(data = dat[dat$regions=="global" & dat$time_window==10,], 
+#              aes(y = at_least_three_change_25, x = at_least_two_shocks),
+#              col = "red") +
+#   theme_bw() + xlim(0,1) + ylim(0,1) +
+#   ylab("Probability of at least 3 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+#   geom_text_repel(data = dat[dat$time_window==10 & dat$at_least_two_shocks>0.5 & dat$at_least_three_change_25>0.5,], aes(label = regions),
+#                   size=2, max.overlaps=15)
+# dev.off()
 
 ### Boxplots comparing distributions
 # boxplot for shocks
@@ -513,7 +536,8 @@ change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_chang
 shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec)
 long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>% 
   pivot_wider(names_from = "type", values_from = "probas")
-dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
 
 ### Comparing individual compensation at least one probabilities ----
 # long-term probabilities
@@ -705,7 +729,8 @@ dev.off()
 regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
   filter(POL_TYPE != "Joint regime (EEZ)",
          is.na(SOVEREIGN2),
-         SOVEREIGN1 != "Republic of Mauritius") %>% 
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
   dplyr::select(UNION, SOVEREIGN1)
 
 # average climate models for ssp585 
@@ -719,7 +744,7 @@ dat_mec_ssp585 <- dat_mec %>%
             at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
             at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T))
 
-regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions"))
+regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions")) 
 
 png(paste0("figures/combined/maps_mechanisms_ssp585_climates_averaged.png"),
     width = 6*200, height = 4*200, res = 200)
@@ -849,6 +874,7 @@ png("figures/combined/rank_countries_exposure_probabilities.png",
     width = 10*200, height = 7*200, res = 200)
 dat_ecology %>% 
   filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         regions != "Antarctica",
          regions %in% c("United States","France","China","Madagascar","Sudan","Colombia","Canada",
                         "Australia","Spain","Argentina","Egypt","Germany","Bolivia","Japan",
                         "Ecuador","Mozambique","Russia","Philippines","Mexico",
@@ -868,6 +894,7 @@ png("figures/combined/rank_countries_exposure_probabilities_combined_subset.png"
     width = 7*200, height = 7*200, res = 200)
 dat_ecology %>% 
   filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         regions != "Antarctica",
          regions %in% c("United States","France","China","Madagascar","Sudan","Colombia","Canada",
                         "Australia","Spain","Argentina","Egypt","Germany","Bolivia","Japan",
                         "Ecuador","Mozambique","Russia","Philippines","Mexico",
@@ -886,6 +913,7 @@ png("figures/combined/rank_countries_exposure_probabilities_shocks_subset.png",
     width = 7*200, height = 7*200, res = 200)
 dat_ecology %>% 
   filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         regions != "Antarctica",
          regions %in% c("United States","France","China","Madagascar","Sudan","Colombia","Canada",
                         "Australia","Spain","Argentina","Egypt","Germany","Bolivia","Japan",
                         "Ecuador","Mozambique","Russia","Philippines","Mexico",
@@ -975,7 +1003,8 @@ change_probas_rta_cs <- read_csv("data/long-term_change/rta_long-term_change_198
 shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs, shock_probas_rta_cs)
 long_term <- rbind(change_probas_g_cs, change_probas_r_cs, change_probas_rta_cs) %>% 
   pivot_wider(names_from = "type", values_from = "probas")
-dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window", "spatial_scale"))
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window", "spatial_scale")) %>% 
+  filter(regions != "Antarctica")
 
 ### B. load data for compensatory and synchronous mechanisms ----
 # countries
@@ -1004,7 +1033,8 @@ change_probas_rta_cs_mec <- read_csv("data/long-term_change/rta_long-term_change
 shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec, shock_probas_rta_cs_mec)
 long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec, change_probas_rta_cs_mec) %>% 
   pivot_wider(names_from = "type", values_from = "probas")
-dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window", "spatial_scale"))
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window", "spatial_scale")) %>% 
+  filter(regions != "Antarctica")
 
 
 ### C. Data across metrics ----
@@ -1022,9 +1052,9 @@ dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "time_w
          mechanism = ifelse(str_detect(type, "down")==TRUE, "synchrony", "stability"),
          mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism))
 
-write.csv(dat_ecology_rta,
-          file = "data/ecological_data/cross-sector_climate_exposure_cross_scales.csv",
-          row.names = F)
+# write.csv(dat_ecology_rta,
+#           file = "data/ecological_data/cross-sector_climate_exposure_cross_scales.csv",
+#           row.names = F)
 
 
 ### D. Overview of results ----
@@ -1062,17 +1092,7 @@ dev.off()
   
 # make matrix of country versus RTA
 # load RTA database
-dat_rta <- read_xls("data/RTA WHO/FTA.xls", sheet = 1) %>% 
-  dplyr::select(`RTA ID`,`RTA Name`,`Status`,
-                `RTA Composition`,`Current signatories`) %>% 
-  rename(rta_id = `RTA ID`,
-         rta_name = `RTA Name`,
-         status = `Status`,
-         composition = `RTA Composition`,
-         signatories = `Current signatories`) %>% 
-  filter(composition %in% c("Plurilateral"),
-         status %in% c("In Force","In Force for at least one Party",
-                       "Early announcement-Signed"))
+dat_rta <- read_csv("data/RTA WHO/RTA_filtered.csv")
 
 dat_rta_list <- data.frame()
 for(i in 1:nrow(dat_rta)){
@@ -1107,11 +1127,41 @@ dat_ecology_cnt <- dat_ecology_rta %>%
 dat_ecology_rta <- dat_ecology_rta %>% 
   filter(spatial_scale == "rta")
 
-dat_matrix <- left_join(dat_rta_list, dat_ecology_cnt, by = c("SOVEREIGN1" = "regions")) %>% 
+dat_matrix <- left_join(dat_rta_list, dat_ecology_cnt, by = c("SOVEREIGN1" = "regions"),
+                        relationship = "many-to-many") %>% 
   mutate(rta_id = as.character(rta_id))
 dat_matrix <- left_join(dat_matrix, dat_ecology_rta, by = c("rta_id" = "regions","scale")) %>% 
   mutate(proba_ratio = proba.x/proba.y)
 
+# figure 4 design
+dat_rta$rta_id <- as.character(dat_rta$rta_id)
+dat_fig4 <- dat_matrix %>% 
+  left_join(dat_rta, "rta_id") %>% 
+  filter(!is.na(scale)) %>% 
+  mutate(region = ifelse(str_detect(region, ";")==TRUE, "Cross-regional",region),
+         region = ifelse(region == "Commonwealth of Independent States (CIS), including certain associate and former member States", "Cross-regional", region)) %>% 
+  mutate(proba_ratio = ifelse(proba_ratio>2, 2, proba_ratio)) %>% 
+  arrange(region)
+
+ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)))) +
+  geom_boxplot(linetype = 2, lwd = 0.15, fill = "grey95") +
+  geom_point(alpha = 0.5, size = 2) +
+  geom_point(data = dat_fig4[dat_fig4$SOVEREIGN1 %in% c("United Kingdom","United States","Russia","China","Australia","Norway","Sweden","Spain"),], 
+             aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)),
+                 fill = SOVEREIGN1), shape = 21, size = 2, alpha = 0.8) +
+  theme_bw() +
+  facet_grid(region ~ scale,scale="free_y", space = "free_y") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines')) +
+  xlab("Plurilateral RTAs") + ylab("Exposure ratio") +
+  geom_hline(aes(yintercept=1), linetype = "dashed") +
+  coord_flip() + ylim(0,2) +
+  guides(fill=guide_legend(title="")) +
+  scale_fill_manual(values = c("coral","darkred","blue","cornflowerblue","darkgoldenrod1","purple","plum","darkorange"))
+
+
+# matrix of all shocks
 png("figures/combined/rta_exposures_shocks.png",
     width = 10*200, height = 15*200, res = 300)
 dat_matrix %>% 
@@ -1127,6 +1177,7 @@ dat_matrix %>%
   xlab("RTA ID") + ylab("Country")
 dev.off()
 
+# matrix of all long-term changes
 png("figures/combined/rta_exposures_long-term.png",
     width = 10*200, height = 15*200, res = 300)
 dat_matrix %>% 
@@ -1142,6 +1193,7 @@ dat_matrix %>%
   xlab("RTA ID") + ylab("Country")
 dev.off()
 
+# subset matrix of long term
 png("figures/combined/rta_exposures_long-term_subset.png",
     width = 10*200, height = 7*200, res = 200)
 dat_matrix %>% 
@@ -1162,6 +1214,7 @@ dat_matrix %>%
   xlab("RTA ID") + ylab("Country")
 dev.off()
 
+# subset matrix of shocks
 png("figures/combined/rta_exposures_shocks_subset.png",
     width = 10*200, height = 7*200, res = 200)
 dat_matrix %>% 
