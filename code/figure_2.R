@@ -86,7 +86,7 @@ dat_mec_ssp585 <- dat_mec %>%
 
 regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions")) 
 
-# average climate models for ssp585 but 25% threshold
+# average climate models for ssp585 with the 25% threshold
 png(paste0("figures/manuscript_figures/figure_2.png"),
     width = 6*200, height = 7*200, res = 200)
 regions_dat %>% 
@@ -128,7 +128,7 @@ dat_mec_ssp126 <- dat_mec %>%
 
 regions_dat <- left_join(regions, dat_mec_ssp126, by = c("SOVEREIGN1" = "regions")) 
 
-# average climate models for ssp585 but 25% threshold
+# average climate models for ssp1.26 for SI
 png(paste0("figures/manuscript_figures/figure_2_ssp126_si.png"),
     width = 6*200, height = 7*200, res = 200)
 regions_dat %>% 
@@ -153,3 +153,45 @@ regions_dat %>%
         strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.25,'lines'))
 dev.off()
+
+
+#### D. Summary statistics for the results description ----
+# 195 countries
+dat_mec_ssp585 %>% 
+  pivot_longer(2:7, names_to = "type", values_to = "probas") %>% 
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "shock", "gradual"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", "change"),
+         mechanism = ifelse(str_detect(type, "two_shocks_down")==TRUE,"synchrony",mechanism),
+         mechanism = ifelse(str_detect(type, "two_change_25")==TRUE, "synchrony",mechanism)) %>% 
+  group_by(type, mechanism, scale) %>% 
+  summarize(proba_higher_0.5 = length(regions[probas>0.5])/195*100,
+            proba_higher_0.75 = length(regions[probas>0.75])/195*100)
+
+dat_mec_ssp585 %>% 
+  pivot_longer(2:7, names_to = "type", values_to = "probas") %>% 
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "shock", "gradual"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", "change"),
+         mechanism = ifelse(str_detect(type, "two_shocks_down")==TRUE,"synchrony",mechanism),
+         mechanism = ifelse(str_detect(type, "two_change_25")==TRUE, "synchrony",mechanism)) %>% 
+  dplyr::select(-type) %>% 
+  pivot_wider(names_from = scale, values_from = probas) %>% 
+  group_by(mechanism) %>% 
+  summarize(proba_higher_0.5 = length(regions[gradual>0.5 & shock>0.5])/195*100,
+            proba_higher_0.75 = length(regions[gradual>0.75 & shock>0.75])/195*100)
+
+dat_mec_ssp585 %>% 
+  pivot_longer(2:7, names_to = "type", values_to = "probas") %>% 
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "shock", "gradual"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", "change"),
+         mechanism = ifelse(str_detect(type, "two_shocks_down")==TRUE,"synchrony",mechanism),
+         mechanism = ifelse(str_detect(type, "two_change_25")==TRUE, "synchrony",mechanism)) %>% 
+  dplyr::select(-type) %>% 
+  filter(mechanism!="change") %>% 
+  pivot_wider(names_from = mechanism, values_from = probas) %>% 
+  group_by(scale) %>% 
+  summarize(proba_higher_0.5 = length(regions[synchrony>0.5 & compensation>0.5])/195*100,
+            proba_higher_0.75 = length(regions[synchrony>0.75 & compensation>0.75])/195*100)
+
+  
+
+

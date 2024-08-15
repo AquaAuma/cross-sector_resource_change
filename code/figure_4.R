@@ -21,7 +21,7 @@ library(colorspace)
 #### 4. EXPOSURE TO CLIMATE CS IMPACTS for CNT versus RTAs
 ################################################################################
 
-### A. load data for short- and long-term changes ----
+#### A. load data for short- and long-term changes ----
 # countries
 shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas.csv") %>% 
   mutate(spatial_scale = "regions")
@@ -51,7 +51,7 @@ long_term <- rbind(change_probas_g_cs, change_probas_r_cs, change_probas_rta_cs)
 dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window", "spatial_scale")) %>% 
   filter(regions != "Antarctica")
 
-### B. load data for compensatory and synchronous mechanisms ----
+#### B. load data for compensatory and synchronous mechanisms ----
 # countries
 shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_mechanisms.csv") %>% 
   mutate(spatial_scale = "regions")
@@ -82,7 +82,7 @@ dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "tim
   filter(regions != "Antarctica")
 
 
-### C. Data across metrics ----
+#### C. Data across metrics ----
 # cbind both datasets
 dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "time_window", "spatial_scale")) %>% 
   filter(time_window == 30) %>% 
@@ -140,7 +140,7 @@ dat_matrix <- left_join(dat_matrix, dat_ecology_rta, by = c("rta_id" = "regions"
   mutate(proba_ratio = proba.x/proba.y)
 
 
-### D. Figure 4 ----
+#### D. Figure 4 ----
 dat_rta$rta_id <- as.character(dat_rta$rta_id)
 dat_fig4 <- dat_matrix %>% 
   left_join(dat_rta, "rta_id") %>% 
@@ -173,7 +173,7 @@ ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)
 dev.off()
 
 
-### E. Figure 4 ssp126 SI----
+#### E. Figure 4 ssp126 SI----
 dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "time_window", "spatial_scale")) %>% 
   filter(time_window == 30) %>% 
   dplyr::select(regions, climates, time_window, spatial_scale,
@@ -262,7 +262,7 @@ ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)
 dev.off()
 
 
-### F. Figure 4 compensation SSP585 SI----
+#### F. Figure 4 compensation SSP585 SI----
 dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "time_window", "spatial_scale")) %>% 
   filter(time_window == 30) %>% 
   dplyr::select(regions, climates, time_window, spatial_scale,
@@ -443,3 +443,11 @@ dat_maps %>%
   
 dev.off()
   
+
+#### H. Summary statistics for results description ----
+
+dat_fig4 %>% 
+  group_by(rta_id, rta_acronym, scale) %>% 
+  summarize(proba_ratio = mean(proba_ratio, na.rm=T)) %>% 
+  group_by(scale) %>% 
+  summarize(proba_ratio = mean(proba_ratio, na.rm=T))

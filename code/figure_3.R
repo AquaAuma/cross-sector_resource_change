@@ -20,7 +20,7 @@ library(colorspace)
 ################################################################################
 #### 3. SUMMARIZING ECOLOGICAL METRICS TO FIND WORSE-CASE SCENARIOS
 ################################################################################
-### A. load data for short- and long-term changes ----
+#### A. load data for short- and long-term changes ----
 # countries
 shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas.csv")
 change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
@@ -40,7 +40,7 @@ long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>%
   pivot_wider(names_from = "type", values_from = "probas")
 dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
 
-### B. load data for compensatory and synchronous mechanisms ----
+#### B. load data for compensatory and synchronous mechanisms ----
 # countries
 shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_mechanisms.csv")
 change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
@@ -60,7 +60,7 @@ long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>%
   pivot_wider(names_from = "type", values_from = "probas")
 dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window"))
 
-### C. Data across metrics ----
+#### C. Data across metrics ----
 # cbind both datasets
 dat_ecology <- left_join(dat, dat_mec, by = c("regions", "climates", "time_window")) %>% 
   filter(time_window == 30) %>% 
@@ -76,7 +76,7 @@ dat_ecology <- left_join(dat, dat_mec, by = c("regions", "climates", "time_windo
          mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism))
 
 
-### D. Figure 3 ----
+#### D. Figure 3 ----
 plot_abrupt <- dat_ecology %>% 
   filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
          regions != "Antarctica",
@@ -180,7 +180,7 @@ dat_ecology %>%
 dev.off()
 
 
-### E. Figure 3 for ssp 1.26 ----
+#### E. Figure 3 for ssp 1.26 ----
 
 plot_abrupt <- dat_ecology %>% 
   filter(climates %in% c("gfdl-esm4 ssp126","ipsl-cm6a-lr ssp126"),
@@ -257,4 +257,62 @@ png(paste0("figures/manuscript_figures/figure_3_ssp126_si.png"),
     width = 11*200, height = 10*200, res = 200)
 grid.arrange(plot_gradual, plot_abrupt, nrow = 1)
 dev.off()
-#### E. Figure 4 for ssp 1.26 in SI ----
+#### F. Figure 4 for ssp 1.26 in SI ----
+#### G. Summary statistics for the results description ----
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  group_by(scale) %>% 
+  summarize(overall = median(overall, na.rm=T))
+  
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  group_by() %>% 
+  summarize(overall = median(overall, na.rm=T))
+
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  group_by(scale) %>% 
+  summarize(overall_0.25 = length(regions[overall>0.25])/195*100,
+            overall_0.5 = length(regions[overall>0.5])/195*100,
+            overall_0.75 = length(regions[overall>0.75])/195*100)
+
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  pivot_wider(names_from = scale, values_from = overall) %>% 
+  summarize(overall_0.25 = length(regions[abrupt>0.25 & gradual>0.25])/195*100,
+            overall_0.5 = length(regions[abrupt>0.5 & gradual>0.5])/195*100,
+            overall_0.75 = length(regions[abrupt>0.75 & gradual>0.75])/195*100)
+
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  pivot_wider(names_from = scale, values_from = overall) %>% 
+  filter(gradual>0.5, abrupt>0.5) %>% 
+  pull(regions)
+
+rankings <- dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  pivot_wider(names_from = scale, values_from = overall) %>% 
+  arrange(desc(abrupt)) %>% 
+  tibble::rownames_to_column("ranking_abrupt") %>% 
+  arrange(desc(gradual)) %>% 
+  tibble::rownames_to_column("ranking_gradual") %>% 
+  arrange(regions)
+

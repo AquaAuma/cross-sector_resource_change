@@ -90,10 +90,183 @@ annual_freq %>%
 
 ## Country shock frequency with different smooth spans
 
+### 1983-2013
+
 Repeating the previous analysis with smooth spans for shocks from 0.25 to 0.75.
 
 ```{r spans past trends, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
 
+annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585") %>%
+  dplyr::select(regions, climate_model, eco_model, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(6:8, names_to = "spans", values_to = "shock") %>% 
+  group_by(climate_model, eco_model, years, output_variable, spans) %>% 
+  summarize(shock = mean(shock, na.rm=T))
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="tcblog10") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("TCBLOG10")
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="qtot") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("QTOT")
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="maize") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("MAIZE")
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="soybean") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("SOYBEAN")
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="rice") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("RICE")
+
+annual_freq %>% 
+  filter(years<2014,
+         output_variable=="wheat") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(climate_model ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("WHEAT")
+```
+
+### 1983-2100
+
+```{r spans past-future trends, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv") %>% filter(!output_variable %in% c("tws","tcb","ptotww"), experiment_climate == "ssp585") %>% dplyr::select(regions, climate_model, eco_model, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% pivot_longer(6:8, names_to = "spans", values_to = "shock") %>% group_by(climate_model, eco_model, years, output_variable, spans) %>% summarize(shock = mean(shock, na.rm=T))
+
+annual_freq %>% filter(output_variable=="tcblog10") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("TCBLOG10")
+
+annual_freq %>% filter(output_variable=="qtot") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("QTOT")
+
+annual_freq %>% filter(output_variable=="maize") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("MAIZE")
+
+annual_freq %>% filter(output_variable=="soybean") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("SOYBEAN")
+
+annual_freq %>% filter(output_variable=="rice") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("RICE")
+
+annual_freq %>% filter(output_variable=="wheat") %>% ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) + geom_line() + facet_grid(climate_model ~ eco_model, scales = "free") + theme_bw() + ylab("Shock frequency") + xlab("Year") + geom_smooth(method=lm) + ggtitle("WHEAT")
+```
+
+### 2070-2100
+
+```{r spans future trends, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>% 
+  dplyr::select(regions, climate_model, experiment_climate, eco_model, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(7:9, names_to = "spans", values_to = "shock") %>% 
+  group_by(climate_model, experiment_climate, eco_model, years, output_variable, spans) %>% 
+  summarize(shock = mean(shock, na.rm=T))
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="tcblog10") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("TCBLOG10")
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="qtot") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("QTOT")
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="maize") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("MAIZE")
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="soybean") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("SOYBEAN")
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="rice") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("RICE")
+
+annual_freq %>% 
+  filter(years>2069,
+         output_variable=="wheat") %>% 
+  ggplot(aes(x = years, y = shock, color = climate_model, linetype = spans)) +
+  geom_line() +
+  facet_grid(experiment_climate ~ eco_model, scales = "free") +
+  theme_bw() +
+  ylab("Shock frequency") + xlab("Year") +
+  geom_smooth(method=lm) +
+  ggtitle("WHEAT")
 ```
 
 ## Cross-sector temporal trends

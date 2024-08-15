@@ -243,12 +243,19 @@ for(y in 1:length(yrs)){
       # get at least three res. down proba
       at_least_three_5_down = get_at_least_three(6, change_5_down),
       at_least_three_10_down = get_at_least_three(6, change_10_down),
-      at_least_three_25_down = get_at_least_three(6, change_25_down)) %>% 
+      at_least_three_25_down = get_at_least_three(6, change_25_down),
+      # get at least two res. up and three res. up probas
+      at_least_two_5_up = get_at_least_two(6, change_5_up),
+      at_least_two_10_up = get_at_least_two(6, change_10_up),
+      at_least_two_25_up = get_at_least_two(6, change_25_up),
+      at_least_three_5_up = get_at_least_three(6, change_5_up),
+      at_least_three_10_up = get_at_least_three(6, change_10_up),
+      at_least_three_25_up = get_at_least_three(6, change_25_up)) %>% 
     # dplyr::select(spatial_scale, climates, at_least_one_5_up_down, at_least_one_10_up_down,
     #               at_least_one_25_up_down, at_least_two_5_down, at_least_two_10_down,
     #               at_least_two_25_down, at_least_three_5_down, at_least_three_10_down,
     #               at_least_three_25_down) %>% 
-    pivot_longer(4:18, names_to = "type", values_to = "probas") %>% 
+    pivot_longer(4:24, names_to = "type", values_to = "probas") %>% 
     mutate(time_window = 2099-yrs[y])
   
   if(y==1){change_proba_r_cs_mec <- yy

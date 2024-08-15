@@ -122,7 +122,7 @@ plot_ts_10th <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() +
   ggtitle("End of century average beyond 10th percentile of historical period") +
   theme(legend.position = "none") +
   geom_hline(aes(yintercept = 0), linetype = "dashed") +
-  annotate("rect", xmin = -Inf, xmax = Inf, ymin = quantile(ts_ex$percent_diff[1:33], probs = .1), ymax = quantile(ts_ex$percent_diff[1:33], probs = .9), fill = "lightgreen", alpha = .5) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = quantile(ts_ex$percent_diff[1:33], probs = .05), ymax = quantile(ts_ex$percent_diff[1:33], probs = .95), fill = "lightgreen", alpha = .5) +
   geom_segment(aes(x = 2085, xend = 2085, y = quantile(ts_ex$percent_diff[1:33], probs = .1),
                    yend = avg), arrow = arrow(length = unit(0.5, "cm")),
                colour = "forestgreen", size = 0.5)+
@@ -144,8 +144,8 @@ percentiles <- ts %>%
   group_by(id, sector, eco_model, climate_model, experiment_climate, 
            output_variable, regions) %>% 
   summarize(avg = mean(percent_diff[88:117], na.rm=T),
-            pct = ifelse(avg<0, quantile(percent_diff[1:33], probs = .1, na.rm=T), NA),
-            pct = ifelse(avg>0, quantile(percent_diff[1:33], probs = .9, na.rm=T), pct)) %>% 
+            pct = ifelse(avg<0, quantile(percent_diff[1:33], probs = .05, na.rm=T), NA),
+            pct = ifelse(avg>0, quantile(percent_diff[1:33], probs = .95, na.rm=T), pct)) %>% 
   mutate(climates = paste(climate_model, experiment_climate, sep="-")) %>% 
   filter(!output_variable %in% c("tcb", "tws", "ptotww"))
 
@@ -178,8 +178,8 @@ y <- ts %>%
     mutate(change_5 = ifelse(percent_diff>5 | percent_diff<(-5), 1, 0),
            change_10 = ifelse(percent_diff>10 | percent_diff<(-10), 1, 0),
            change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
-           change_pct = ifelse(percent_diff>0 & percent_diff<quantile(percent_diff[1:33], probs = .1, na.rm=T), 1, 0),
-           change_pct = ifelse(percent_diff>0 & percent_diff>quantile(percent_diff[1:33], probs = .9, na.rm=T), 1, 0)) %>% 
+           change_pct = ifelse(percent_diff>0 & percent_diff<quantile(percent_diff[1:33], probs = .05, na.rm=T), 1, 0),
+           change_pct = ifelse(percent_diff>0 & percent_diff>quantile(percent_diff[1:33], probs = .95, na.rm=T), 1, 0)) %>% 
     group_by(sector, spatial_scale, regions, climate_model, experiment_climate, output_variable) %>% 
     summarize(change_5 = round(mean(change_5, na.rm=T),4),
               change_10 = round(mean(change_10, na.rm=T),4),

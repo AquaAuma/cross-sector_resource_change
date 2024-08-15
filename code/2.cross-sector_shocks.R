@@ -36,23 +36,48 @@ for(i in 1:length(ids)){
   
   if(length(unique(xx$percent_diff))==1){
     xx <- xx %>% 
-      mutate(res = NA,
-             shock = NA,
-             shock_up = NA,
-             shock_down = NA)
+      mutate(res_0.75 = NA,
+             res_0.5 = NA,
+             res_0.25 = NA,
+             shock_0.75 = NA,
+             shock_0.75_up = NA,
+             shock_0.75_down = NA,
+             shock_0.5 = NA,
+             shock_0.5_up = NA,
+             shock_0.5_down = NA,
+             shock_0.25 = NA,
+             shock_0.25_up = NA,
+             shock_0.25_down = NA
+             )
   } else {
-    # loess with span = 1
-    model_smooth <- loess(xx$percent_diff ~ xx$years, span = 0.75)
-    xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+    # loess with span = 0.75
+    model_smooth_0.75 <- loess(xx$percent_diff ~ xx$years, span = 0.75)
+    xx$res_0.75 <- (model_smooth_0.75$residuals - mean(model_smooth_0.75$residuals))/sd(model_smooth_0.75$residuals)
+    
+    # loess with span = 5
+    model_smooth_0.5 <- loess(xx$percent_diff ~ xx$years, span = 0.5)
+    xx$res_0.5 <- (model_smooth_0.5$residuals - mean(model_smooth_0.5$residuals))/sd(model_smooth_0.5$residuals)
+    
+    # loess with span = 0.25
+    model_smooth_0.25 <- loess(xx$percent_diff ~ xx$years, span = 0.25)
+    xx$res_0.25 <- (model_smooth_0.25$residuals - mean(model_smooth_0.25$residuals))/sd(model_smooth_0.25$residuals)
     
     # count shocks
     xx <- xx %>% 
-      mutate(shock = ifelse(res>2, 1, 0),
-             shock = ifelse(res<(-2), 1, shock),
-             shock_up = ifelse(res>2, 1, 0),
-             shock_down = ifelse(res<(-2), 1, 0))
+      mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+             shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+             shock_0.75_up = ifelse(res_0.75>2, 1, 0),
+             shock_0.75_down = ifelse(res_0.75<(-2), 1, 0),
+             shock_0.5 = ifelse(res_0.5>2, 1, 0),
+             shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+             shock_0.5_up = ifelse(res_0.5>2, 1, 0),
+             shock_0.5_down = ifelse(res_0.5<(-2), 1, 0),
+             shock_0.25 = ifelse(res_0.25>2, 1, 0),
+             shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25),
+             shock_0.25_up = ifelse(res_0.25>2, 1, 0),
+             shock_0.25_down = ifelse(res_0.25<(-2), 1, 0))
     
-    rm(model_smooth)
+    rm(model_smooth_0.75, model_smooth_0.25, model_smooth_0.5)
   }
   
   if(i==1){shock_ts_g_cs <- xx}
@@ -61,133 +86,161 @@ for(i in 1:length(ids)){
   rm(xx)
 }
 
-write.csv(shock_ts_g_cs, file = "data/short-term_change/global_shocks_time_series_1985-2015.csv", row.names = F)
+write.csv(shock_ts_g_cs, file = "data/short-term_change/global_shocks_time_series_1985-2015_spans.csv", row.names = F)
 
 # B. get probabilities of shock occurrence across models, sectors and time ----
-xx <- read_csv("data/short-term_change/global_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/global_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
-  # mutate(shock = ifelse(is.na(shock),0,shock),
-  #        shock_up = ifelse(is.na(shock_up),0,shock_up),
-  #        shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(climates, years, output_variable) %>% 
-  summarize(shock = round(mean(shock, na.rm=T),4),
-            shock_down = round(mean(shock_down, na.rm=T),4),
-            shock_up = round(mean(shock_up, na.rm=T),4)) %>% 
-  dplyr::select(climates, years, output_variable, shock) %>% 
-  pivot_wider(names_from = output_variable, values_from = shock) %>% 
+  summarize(shock_0.75 = round(mean(shock_0.75, na.rm=T),4),
+            shock_0.75_down = round(mean(shock_0.75_down, na.rm=T),4),
+            shock_0.75_up = round(mean(shock_0.75_up, na.rm=T),4),
+            shock_0.5 = round(mean(shock_0.5, na.rm=T),4),
+            shock_0.5_down = round(mean(shock_0.5_down, na.rm=T),4),
+            shock_0.5_up = round(mean(shock_0.5_up, na.rm=T),4),
+            shock_0.25 = round(mean(shock_0.25, na.rm=T),4),
+            shock_0.25_down = round(mean(shock_0.25_down, na.rm=T),4),
+            shock_0.25_up = round(mean(shock_0.25_up, na.rm=T),4)) %>% 
+  dplyr::select(climates, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(4:6, names_to = "spans", values_to = "shock") %>% 
+  pivot_wider(names_from = output_variable, values_from = "shock") %>% 
   data.frame() 
   
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_g_cs <- data.frame()
-for(y in 1:length(yrs)){
+for (s in 1:length(spans)){
+  
+  span <- spans[s]
   yy <- xx %>% 
-    filter(years>yrs[y],
-           years<2100)
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE)
   
   yy$at_least_one_shock <- yy$at_least_two_shocks <- yy$at_least_three_shocks <- NA
-  yy$at_least_one_shock <- apply(yy[,3:8], 1, function(x) get_at_least_one(6,x))
-  yy$at_least_two_shocks <- apply(yy[,3:8], 1, function(x) get_at_least_two(6,x))
-  yy$at_least_three_shocks <- apply(yy[,3:8], 1, function(x) get_at_least_three(6,x))
+  yy$at_least_one_shock <- apply(yy[,4:9], 1, function(x) get_at_least_one(6,x))
+  yy$at_least_two_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_two(6,x))
+  yy$at_least_three_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_three(6,x))
   
   yy <- yy %>% 
-    dplyr::select(climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
-    group_by(climates) %>% 
-    summarize(at_least_one_shock = get_at_least_one(2099-yrs[y],at_least_one_shock),
-              at_least_two_shocks = get_at_least_one(2099-yrs[y], at_least_two_shocks),
-              at_least_three_shocks = get_at_least_one(2099-yrs[y], at_least_three_shocks),
-              time_window = 2099-yrs[y])
+    dplyr::select(climates, years, spans, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+    group_by(climates, spans) %>% 
+    summarize(at_least_one_shock = get_at_least_one(2099-2069,at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(2099-2069, at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(2099-2069, at_least_three_shocks),
+              time_window = 2099-2069)
   
-  if(y==1){shock_proba_g_cs <- yy
+  if(s==1){shock_proba_g_cs <- yy
   } else {shock_proba_g_cs <- rbind(shock_proba_g_cs,yy)}
   rm(yy)
+  
 }
 
-write.csv(shock_proba_g_cs, file = "data/short-term_change/global_shocks_1985-2015_probas.csv", 
+write.csv(shock_proba_g_cs, file = "data/short-term_change/global_shocks_1985-2015_probas_spans.csv", 
           row.names = F)
 
 # C. get probabilities of synchrony across models, sectors and time ----
-xx <- read_csv("data/short-term_change/global_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/global_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
   mutate(
-         # shock = ifelse(is.na(shock),0,shock),
-         # shock_up = ifelse(is.na(shock_up),0,shock_up),
-         # shock_down = ifelse(is.na(shock_down),0,shock_down),
          # transform water shocks into negative shocks
          # crop and fish shocks remain positive if increasing and negative is decreasing
-         shock_positive = ifelse(output_variable=="qtot", 0, shock_up),
-         shock_negative = ifelse(output_variable=="qtot" & shock_up==1, 1, shock_down),
-         shock_sign = ifelse(shock_up>0, shock, -shock_down)) %>%
+         shock_0.75_positive = ifelse(output_variable=="qtot", 0, shock_0.75_up),
+         shock_0.75_negative = ifelse(output_variable=="qtot" & shock_0.75_up==1, 1, shock_0.75_down),
+         shock_0.75_sign = ifelse(shock_0.75_up>0, shock_0.75, -shock_0.75_down),
+         shock_0.5_positive = ifelse(output_variable=="qtot", 0, shock_0.5_up),
+         shock_0.5_negative = ifelse(output_variable=="qtot" & shock_0.5_up==1, 1, shock_0.5_down),
+         shock_0.5_sign = ifelse(shock_0.5_up>0, shock_0.5, -shock_0.5_down),
+         shock_0.25_positive = ifelse(output_variable=="qtot", 0, shock_0.25_up),
+         shock_0.25_negative = ifelse(output_variable=="qtot" & shock_0.25_up==1, 1, shock_0.25_down),
+         shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(climates, years, output_variable) %>% 
-  summarize(shock_negative = round(mean(shock_negative),4),
-            shock_positive = round(mean(shock_positive),4),
-            shock_sign = round(mean(shock_sign),4))
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  pivot_longer(4:12, names_to = "spans", values_to = "shock")
 
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_g_cs_mec <- data.frame()
-for(y in 1:length(yrs)){
+for(s in 1:length(spans)){
   
   # negative synchrony
+  span <- spans[s]
   ss <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "negative")==TRUE) %>% 
+    dplyr::select(climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   ss$at_least_two_shocks_down <- ss$at_least_three_shocks_down <- NA
-  ss$at_least_two_shocks_down <- apply(ss[,3:8], 1, function(x) get_at_least_two(6,x))
-  ss$at_least_three_shocks_down <- apply(ss[,3:8], 1, function(x) get_at_least_three(6,x))
+  ss$at_least_two_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_two(6,x))
+  ss$at_least_three_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_three(6,x))
   
   ss <- ss %>% 
-    dplyr::select(climates, years, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
-    group_by(climates) %>% 
-    summarize(at_least_two_shocks_down = get_at_least_one(2099-yrs[y], at_least_two_shocks_down),
-              at_least_three_shocks_down = get_at_least_one(2099-yrs[y], at_least_three_shocks_down),
-              time_window = 2099-yrs[y])
+    dplyr::select(climates, years, spans, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
+    group_by(climates, spans) %>% 
+    summarize(at_least_two_shocks_down = get_at_least_one(2099-2069, at_least_two_shocks_down),
+              at_least_three_shocks_down = get_at_least_one(2099-2069, at_least_three_shocks_down),
+              time_window = 2099-2069)
   
   # compensation
   # P(at least one shock up)
   cc_up <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(climates, years, output_variable, shock_positive) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_positive) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "positive")==TRUE) %>% 
+    dplyr::select(climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   cc_up$at_least_one_shock_up <- NA
-  cc_up$at_least_one_shock_up <- apply(cc_up[,3:8], 1, function(x) get_at_least_one(6,x))
+  cc_up$at_least_one_shock_up <- apply(cc_up[,4:9], 1, function(x) get_at_least_one(6,x))
   cc_up$maize <- cc_up$qtot <- cc_up$rice <- cc_up$soybean <- cc_up$tcblog10 <- cc_up$wheat <- NULL
+  cc_up$spans <- NULL
   
   # P(at least one shock down)
   cc_down <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "negative")==TRUE) %>% 
+    dplyr::select(climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   cc_down$at_least_one_shock_down <- NA
-  cc_down$at_least_one_shock_down <- apply(cc_down[,3:8], 1, function(x) get_at_least_one(6,x))
+  cc_down$at_least_one_shock_down <- apply(cc_down[,4:9], 1, function(x) get_at_least_one(6,x))
   cc_down$maize <- cc_down$qtot <- cc_down$rice <- cc_down$soybean <- cc_down$tcblog10 <- cc_down$wheat <- NULL
+  cc_down$spans <- NULL
   
   # P(at least one shock up and one shock down)
-  cc <- left_join(cc_up, cc_down) %>% 
+  cc <- full_join(cc_up, cc_down) %>% 
     mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
     group_by(climates) %>% 
-    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down),
-              at_least_one_shock_up = get_at_least_one(2099-yrs[y], at_least_one_shock_up),
-              at_least_one_shock_down = get_at_least_one(2099-yrs[y], at_least_one_shock_down))
+    summarize(at_least_one_shock_up_down = get_at_least_one(30, at_least_one_shock_up_down),
+              at_least_one_shock_up = get_at_least_one(30, at_least_one_shock_up),
+              at_least_one_shock_down = get_at_least_one(30, at_least_one_shock_down))
   
-  yy <- left_join(ss, cc)
+  yy <- left_join(ss, cc) %>% 
+    mutate(spans = span)
   
-  if(y==1){shock_proba_g_cs_mec <- yy
+  if(s==1){shock_proba_g_cs_mec <- yy
   } else {shock_proba_g_cs_mec <- rbind(shock_proba_g_cs_mec,yy)}
   rm(yy)
 }
 
-write.csv(shock_proba_g_cs_mec, file = "data/short-term_change/global_shocks_1985-2015_probas_mechanisms.csv", 
+write.csv(shock_proba_g_cs_mec, file = "data/short-term_change/global_shocks_1985-2015_probas_spans_mechanisms.csv", 
           row.names = F)
 
 
@@ -217,22 +270,47 @@ for(i in 1:length(ids)){
   
   if(length(unique(xx$percent_diff))==1 | length(unique(xx[!is.na(xx$percent_diff),]$percent_diff))==1){
     xx <- xx %>% 
-      mutate(res = NA,
-             shock = NA,
-             shock_up = NA,
-             shock_down = NA)
+      mutate(res_0.75 = NA,
+              res_0.5 = NA,
+              res_0.25 = NA,
+              shock_0.75 = NA,
+              shock_0.75_up = NA,
+              shock_0.75_down = NA,
+              shock_0.5 = NA,
+              shock_0.5_up = NA,
+              shock_0.5_down = NA,
+              shock_0.25 = NA,
+              shock_0.25_up = NA,
+              shock_0.25_down = NA)
   } else {
-    # loess with span = 1
-    model_smooth <- loess(xx$percent_diff ~ xx$years, span = 0.75)
-    xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+    # loess with span = 0.75
+    model_smooth_0.75 <- loess(xx$percent_diff ~ xx$years, span = 0.75)
+    xx$res_0.75 <- (model_smooth_0.75$residuals - mean(model_smooth_0.75$residuals))/sd(model_smooth_0.75$residuals)
+    
+    # loess with span = 5
+    model_smooth_0.5 <- loess(xx$percent_diff ~ xx$years, span = 0.5)
+    xx$res_0.5 <- (model_smooth_0.5$residuals - mean(model_smooth_0.5$residuals))/sd(model_smooth_0.5$residuals)
+    
+    # loess with span = 0.25
+    model_smooth_0.25 <- loess(xx$percent_diff ~ xx$years, span = 0.25)
+    xx$res_0.25 <- (model_smooth_0.25$residuals - mean(model_smooth_0.25$residuals))/sd(model_smooth_0.25$residuals)
     
     # count shocks
     xx <- xx %>% 
-      mutate(shock = ifelse(res>2, 1, 0),
-             shock = ifelse(res<(-2), 1, shock),
-             shock_up = ifelse(res>2, 1, 0),
-             shock_down = ifelse(res<(-2), 1, 0))
-    rm(model_smooth)
+      mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+             shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+             shock_0.75_up = ifelse(res_0.75>2, 1, 0),
+             shock_0.75_down = ifelse(res_0.75<(-2), 1, 0),
+             shock_0.5 = ifelse(res_0.5>2, 1, 0),
+             shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+             shock_0.5_up = ifelse(res_0.5>2, 1, 0),
+             shock_0.5_down = ifelse(res_0.5<(-2), 1, 0),
+             shock_0.25 = ifelse(res_0.25>2, 1, 0),
+             shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25),
+             shock_0.25_up = ifelse(res_0.25>2, 1, 0),
+             shock_0.25_down = ifelse(res_0.25<(-2), 1, 0))
+    
+    rm(model_smooth_0.75, model_smooth_0.25, model_smooth_0.5)
   }
   
   if(i==1){shock_ts_r_cs <- xx}
@@ -241,133 +319,164 @@ for(i in 1:length(ids)){
   rm(xx)
 }
 
-write.csv(shock_ts_r_cs, file = "data/short-term_change/countries_shocks_time_series_1985-2015.csv", row.names = F)
+write.csv(shock_ts_r_cs, file = "data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv", row.names = F)
 
 # B. get probabilities of shock occurrence across models, sectors and time ----
-xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
-  # mutate(shock = ifelse(is.na(shock),0,shock),
-  #        shock_up = ifelse(is.na(shock_up),0,shock_up),
-  #        shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock = round(mean(shock),4),
-            shock_down = round(mean(shock_down),4),
-            shock_up = round(mean(shock_up),4)) %>% 
-  dplyr::select(regions, climates, years, output_variable, shock) %>% 
-  pivot_wider(names_from = output_variable, values_from = shock) %>% 
+  summarize(shock_0.75 = round(mean(shock_0.75, na.rm=T),4),
+            shock_0.75_down = round(mean(shock_0.75_down, na.rm=T),4),
+            shock_0.75_up = round(mean(shock_0.75_up, na.rm=T),4),
+            shock_0.5 = round(mean(shock_0.5, na.rm=T),4),
+            shock_0.5_down = round(mean(shock_0.5_down, na.rm=T),4),
+            shock_0.5_up = round(mean(shock_0.5_up, na.rm=T),4),
+            shock_0.25 = round(mean(shock_0.25, na.rm=T),4),
+            shock_0.25_down = round(mean(shock_0.25_down, na.rm=T),4),
+            shock_0.25_up = round(mean(shock_0.25_up, na.rm=T),4)) %>% 
+  dplyr::select(regions, climates, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(5:7, names_to = "spans", values_to = "shock") %>% 
+  pivot_wider(names_from = output_variable, values_from = "shock") %>% 
   data.frame() 
 
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_r_cs <- data.frame()
-for(y in 1:length(yrs)){
+for(s in 1:length(spans)){
+  
+  span <- spans[s]
   yy <- xx %>% 
-    filter(years>yrs[y],
-           years<2100)
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE)
   
   yy$at_least_one_shock <- yy$at_least_two_shocks <- yy$at_least_three_shocks <- NA
-  yy$at_least_one_shock <- apply(yy[,4:9], 1, function(x) get_at_least_one(6,x))
-  yy$at_least_two_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_two(6,x))
-  yy$at_least_three_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_three(6,x))
+  yy$at_least_one_shock <- apply(yy[,5:10], 1, function(x) get_at_least_one(6,x))
+  yy$at_least_two_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_two(6,x))
+  yy$at_least_three_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_three(6,x))
   
   yy <- yy %>% 
-    dplyr::select(regions, climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
-    group_by(regions, climates) %>% 
-    summarize(at_least_one_shock = get_at_least_one(2099-yrs[y],at_least_one_shock),
-              at_least_two_shocks = get_at_least_one(2099-yrs[y], at_least_two_shocks),
-              at_least_three_shocks = get_at_least_one(2099-yrs[y], at_least_three_shocks),
-              time_window = 2099-yrs[y])
+    dplyr::select(regions, climates, years, spans, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+    group_by(regions, climates, spans) %>% 
+    summarize(at_least_one_shock = get_at_least_one(30,at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(30, at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(30, at_least_three_shocks),
+              time_window = 30)
   
-  if(y==1){shock_proba_r_cs <- yy
+  if(s==1){shock_proba_r_cs <- yy
   } else {shock_proba_r_cs <- rbind(shock_proba_r_cs,yy)}
   rm(yy)
 }
 
-write.csv(shock_proba_r_cs, file = "data/short-term_change/countries_shocks_1985-2015_probas.csv", 
+write.csv(shock_proba_r_cs, file = "data/short-term_change/countries_shocks_1985-2015_probas_spans.csv", 
           row.names = F)
 
 # C. get probabilities of synchrony across models, sectors and time ----
-xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
   mutate(
-         shock = ifelse(is.na(shock),0,shock),
-         shock_up = ifelse(is.na(shock_up),0,shock_up),
-         shock_down = ifelse(is.na(shock_down),0,shock_down),
          # transform water shocks into negative shocks
          # crop and fish shocks remain positive if increasing and negative is decreasing
-         shock_positive = ifelse(output_variable=="qtot", 0, shock_up),
-         shock_negative = ifelse(output_variable=="qtot" & shock_up==1, 1, shock_down),
-         shock_sign = ifelse(shock_up>0, shock, -shock_down)) %>%
+         shock_0.75_positive = ifelse(output_variable=="qtot", 0, shock_0.75_up),
+         shock_0.75_negative = ifelse(output_variable=="qtot" & shock_0.75_up==1, 1, shock_0.75_down),
+         shock_0.75_sign = ifelse(shock_0.75_up>0, shock_0.75, -shock_0.75_down),
+         shock_0.5_positive = ifelse(output_variable=="qtot", 0, shock_0.5_up),
+         shock_0.5_negative = ifelse(output_variable=="qtot" & shock_0.5_up==1, 1, shock_0.5_down),
+         shock_0.5_sign = ifelse(shock_0.5_up>0, shock_0.5, -shock_0.5_down),
+         shock_0.25_positive = ifelse(output_variable=="qtot", 0, shock_0.25_up),
+         shock_0.25_negative = ifelse(output_variable=="qtot" & shock_0.25_up==1, 1, shock_0.25_down),
+         shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock_negative = round(mean(shock_negative),4),
-            shock_positive = round(mean(shock_positive),4),
-            shock_sign = round(mean(shock_sign),4))
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  pivot_longer(5:13, names_to = "spans", values_to = "shock")
 
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_r_cs_mec <- data.frame()
-for(y in 1:length(yrs)){
+for(s in 1:length(spans)){
   
   # negative synchrony
+  span <- spans[s]
   ss <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "negative")==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   ss$at_least_two_shocks_down <- ss$at_least_three_shocks_down <- NA
-  ss$at_least_two_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_two(6,x))
-  ss$at_least_three_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_three(6,x))
+  ss$at_least_two_shocks_down <- apply(ss[,5:10], 1, function(x) get_at_least_two(6,x))
+  ss$at_least_three_shocks_down <- apply(ss[,5:10], 1, function(x) get_at_least_three(6,x))
   
   ss <- ss %>% 
-    dplyr::select(regions, climates, years, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
-    group_by(regions, climates) %>% 
-    summarize(at_least_two_shocks_down = get_at_least_one(2099-yrs[y], at_least_two_shocks_down),
-              at_least_three_shocks_down = get_at_least_one(2099-yrs[y], at_least_three_shocks_down),
-              time_window = 2099-yrs[y])
+    dplyr::select(regions, climates, years, spans, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
+    group_by(regions, climates, spans) %>% 
+    summarize(at_least_two_shocks_down = get_at_least_one(30, at_least_two_shocks_down),
+              at_least_three_shocks_down = get_at_least_one(30, at_least_three_shocks_down),
+              time_window = 30)
   
   # compensation
   # P(at least one shock up)
   cc_up <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_positive) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_positive) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, "positive")==TRUE,
+           str_detect(spans, span)==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
-  cc_up$at_least_one_shock_up <- NA
-  cc_up$at_least_one_shock_up <- apply(cc_up[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_up$at_least_one_shock_up <- cc_up$at_least_two_shocks_up <- cc_up$at_least_three_shocks_up <- NA
+  cc_up$at_least_one_shock_up <- apply(cc_up[,5:10], 1, function(x) get_at_least_one(6,x))
+  cc_up$at_least_two_shocks_up <- apply(cc_up[,5:10], 1, function(x) get_at_least_two(6,x))
+  cc_up$at_least_three_shocks_up <- apply(cc_up[,5:10], 1, function(x) get_at_least_three(6,x))
   cc_up$maize <- cc_up$qtot <- cc_up$rice <- cc_up$soybean <- cc_up$tcblog10 <- cc_up$wheat <- NULL
+  cc_up$spans <- NULL
   
   # P(at least one shock down)
   cc_down <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, "negative")==TRUE,
+           str_detect(spans, span)==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   cc_down$at_least_one_shock_down <- NA
-  cc_down$at_least_one_shock_down <- apply(cc_down[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_down$at_least_one_shock_down <- apply(cc_down[,5:10], 1, function(x) get_at_least_one(6,x))
   cc_down$maize <- cc_down$qtot <- cc_down$rice <- cc_down$soybean <- cc_down$tcblog10 <- cc_down$wheat <- NULL
+  cc_down$spans <- NULL
   
   # P(at least one shock up and one shock down)
   cc <- left_join(cc_up, cc_down) %>% 
     mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
     group_by(regions, climates) %>% 
-    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down),
-              at_least_one_shock_up = get_at_least_one(2099-yrs[y], at_least_one_shock_up),
-              at_least_one_shock_down = get_at_least_one(2099-yrs[y], at_least_one_shock_down))
+    summarize(at_least_one_shock_up_down = get_at_least_one(30, at_least_one_shock_up_down),
+              at_least_one_shock_up = get_at_least_one(30, at_least_one_shock_up),
+              at_least_one_shock_down = get_at_least_one(30, at_least_one_shock_down),
+              at_least_two_shocks_up = get_at_least_one(30, at_least_two_shocks_up),
+              at_least_three_shocks_up = get_at_least_one(30, at_least_three_shocks_up))
   
-  yy <- left_join(ss, cc)
+  yy <- left_join(ss, cc) %>% 
+    mutate(spans = span)
   
-  if(y==1){shock_proba_r_cs_mec <- yy
+  if(s==1){shock_proba_r_cs_mec <- yy
   } else {shock_proba_r_cs_mec <- rbind(shock_proba_r_cs_mec,yy)}
   rm(yy)
 }
 
-write.csv(shock_proba_r_cs_mec, file = "data/short-term_change/countries_shocks_1985-2015_probas_mechanisms.csv", 
+write.csv(shock_proba_r_cs_mec, file = "data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv", 
           row.names = F)
 
 
@@ -397,22 +506,48 @@ for(i in 1:length(ids)){
   
   if(length(unique(xx$percent_diff))==1 | length(unique(xx[!is.na(xx$percent_diff),]$percent_diff))==1){
     xx <- xx %>% 
-      mutate(res = NA,
-             shock = NA,
-             shock_up = NA,
-             shock_down = NA)
+      mutate(res_0.75 = NA,
+             res_0.5 = NA,
+             res_0.25 = NA,
+             shock_0.75 = NA,
+             shock_0.75_up = NA,
+             shock_0.75_down = NA,
+             shock_0.5 = NA,
+             shock_0.5_up = NA,
+             shock_0.5_down = NA,
+             shock_0.25 = NA,
+             shock_0.25_up = NA,
+             shock_0.25_down = NA
+             )
   } else {
-    # loess with span = 1
-    model_smooth <- loess(xx$percent_diff ~ xx$years, span = 0.75)
-    xx$res <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+    # loess with span = 0.75
+    model_smooth_0.75 <- loess(xx$percent_diff ~ xx$years, span = 0.75)
+    xx$res_0.75 <- (model_smooth_0.75$residuals - mean(model_smooth_0.75$residuals))/sd(model_smooth_0.75$residuals)
+    
+    # loess with span = 5
+    model_smooth_0.5 <- loess(xx$percent_diff ~ xx$years, span = 0.5)
+    xx$res_0.5 <- (model_smooth_0.5$residuals - mean(model_smooth_0.5$residuals))/sd(model_smooth_0.5$residuals)
+    
+    # loess with span = 0.25
+    model_smooth_0.25 <- loess(xx$percent_diff ~ xx$years, span = 0.25)
+    xx$res_0.25 <- (model_smooth_0.25$residuals - mean(model_smooth_0.25$residuals))/sd(model_smooth_0.25$residuals)
     
     # count shocks
     xx <- xx %>% 
-      mutate(shock = ifelse(res>2, 1, 0),
-             shock = ifelse(res<(-2), 1, shock),
-             shock_up = ifelse(res>2, 1, 0),
-             shock_down = ifelse(res<(-2), 1, 0))
-    rm(model_smooth)
+      mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+             shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+             shock_0.75_up = ifelse(res_0.75>2, 1, 0),
+             shock_0.75_down = ifelse(res_0.75<(-2), 1, 0),
+             shock_0.5 = ifelse(res_0.5>2, 1, 0),
+             shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+             shock_0.5_up = ifelse(res_0.5>2, 1, 0),
+             shock_0.5_down = ifelse(res_0.5<(-2), 1, 0),
+             shock_0.25 = ifelse(res_0.25>2, 1, 0),
+             shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25),
+             shock_0.25_up = ifelse(res_0.25>2, 1, 0),
+             shock_0.25_down = ifelse(res_0.25<(-2), 1, 0))
+    
+    rm(model_smooth_0.75, model_smooth_0.25, model_smooth_0.5)
   }
   
   if(i==1){shock_ts_rta_cs <- xx}
@@ -421,131 +556,155 @@ for(i in 1:length(ids)){
   rm(xx)
 }
 
-write.csv(shock_ts_rta_cs, file = "data/short-term_change/rta_shocks_time_series_1985-2015.csv", row.names = F)
+write.csv(shock_ts_rta_cs, file = "data/short-term_change/rta_shocks_time_series_1985-2015_spans.csv", row.names = F)
 
 #### B. get probabilities of shock occurrence across models, sectors and time ----
-xx <- read_csv("data/short-term_change/rta_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/rta_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
-  # mutate(shock = ifelse(is.na(shock),0,shock),
-  #        shock_up = ifelse(is.na(shock_up),0,shock_up),
-  #        shock_down = ifelse(is.na(shock_down),0,shock_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock = round(mean(shock),4),
-            shock_down = round(mean(shock_down),4),
-            shock_up = round(mean(shock_up),4)) %>% 
-  dplyr::select(regions, climates, years, output_variable, shock) %>% 
-  pivot_wider(names_from = output_variable, values_from = shock) %>% 
+  summarize(shock_0.75 = round(mean(shock_0.75, na.rm=T),4),
+            shock_0.75_down = round(mean(shock_0.75_down, na.rm=T),4),
+            shock_0.75_up = round(mean(shock_0.75_up, na.rm=T),4),
+            shock_0.5 = round(mean(shock_0.5, na.rm=T),4),
+            shock_0.5_down = round(mean(shock_0.5_down, na.rm=T),4),
+            shock_0.5_up = round(mean(shock_0.5_up, na.rm=T),4),
+            shock_0.25 = round(mean(shock_0.25, na.rm=T),4),
+            shock_0.25_down = round(mean(shock_0.25_down, na.rm=T),4),
+            shock_0.25_up = round(mean(shock_0.25_up, na.rm=T),4)) %>% 
+  dplyr::select(regions, climates, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(5:7, names_to = "spans", values_to = "shock") %>% 
+  pivot_wider(names_from = output_variable, values_from = "shock") %>% 
   data.frame() 
 
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_rta_cs <- data.frame()
-for(y in 1:length(yrs)){
+for(s in 1:length(spans)){
+  span <- spans[s]
   yy <- xx %>% 
-    filter(years>yrs[y],
-           years<2100)
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE)
   
   yy$at_least_one_shock <- yy$at_least_two_shocks <- yy$at_least_three_shocks <- NA
-  yy$at_least_one_shock <- apply(yy[,4:9], 1, function(x) get_at_least_one(6,x))
-  yy$at_least_two_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_two(6,x))
-  yy$at_least_three_shocks <- apply(yy[,4:9], 1, function(x) get_at_least_three(6,x))
+  yy$at_least_one_shock <- apply(yy[,5:10], 1, function(x) get_at_least_one(6,x))
+  yy$at_least_two_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_two(6,x))
+  yy$at_least_three_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_three(6,x))
   
   yy <- yy %>% 
-    dplyr::select(regions, climates, years, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
-    group_by(regions, climates) %>% 
-    summarize(at_least_one_shock = get_at_least_one(2099-yrs[y],at_least_one_shock),
-              at_least_two_shocks = get_at_least_one(2099-yrs[y], at_least_two_shocks),
-              at_least_three_shocks = get_at_least_one(2099-yrs[y], at_least_three_shocks),
-              time_window = 2099-yrs[y])
+    dplyr::select(regions, climates, years, spans, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+    group_by(regions, climates, spans) %>% 
+    summarize(at_least_one_shock = get_at_least_one(30,at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(30, at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(30, at_least_three_shocks),
+              time_window = 30)
   
-  if(y==1){shock_proba_rta_cs <- yy
+  if(s==1){shock_proba_rta_cs <- yy
   } else {shock_proba_rta_cs <- rbind(shock_proba_rta_cs,yy)}
   rm(yy)
 }
 
-write.csv(shock_proba_rta_cs, file = "data/short-term_change/rta_shocks_1985-2015_probas.csv", 
+write.csv(shock_proba_rta_cs, file = "data/short-term_change/rta_shocks_1985-2015_probas_spans.csv", 
           row.names = F)
 
 #### C. get probabilities of synchrony across models, sectors and time ----
-xx <- read_csv("data/short-term_change/rta_shocks_time_series_1985-2015.csv")%>% 
+xx <- read_csv("data/short-term_change/rta_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
   mutate(
-    shock = ifelse(is.na(shock),0,shock),
-    shock_up = ifelse(is.na(shock_up),0,shock_up),
-    shock_down = ifelse(is.na(shock_down),0,shock_down),
-    # transform water shocks into negative shocks
-    # crop and fish shocks remain positive if increasing and negative is decreasing
-    shock_positive = ifelse(output_variable=="qtot", 0, shock_up),
-    shock_negative = ifelse(output_variable=="qtot" & shock_up==1, 1, shock_down),
-    shock_sign = ifelse(shock_up>0, shock, -shock_down)) %>%
+        shock_0.75_positive = ifelse(output_variable=="qtot", 0, shock_0.75_up),
+        shock_0.75_negative = ifelse(output_variable=="qtot" & shock_0.75_up==1, 1, shock_0.75_down),
+        shock_0.75_sign = ifelse(shock_0.75_up>0, shock_0.75, -shock_0.75_down),
+        shock_0.5_positive = ifelse(output_variable=="qtot", 0, shock_0.5_up),
+        shock_0.5_negative = ifelse(output_variable=="qtot" & shock_0.5_up==1, 1, shock_0.5_down),
+        shock_0.5_sign = ifelse(shock_0.5_up>0, shock_0.5, -shock_0.5_down),
+        shock_0.25_positive = ifelse(output_variable=="qtot", 0, shock_0.25_up),
+        shock_0.25_negative = ifelse(output_variable=="qtot" & shock_0.25_up==1, 1, shock_0.25_down),
+        shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock_negative = round(mean(shock_negative),4),
-            shock_positive = round(mean(shock_positive),4),
-            shock_sign = round(mean(shock_sign),4))
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  pivot_longer(5:13, names_to = "spans", values_to = "shock")
 
-yrs <- c(2069,2079,2089)
+spans <- c("0.25","0.5","0.75")
 shock_proba_rta_cs_mec <- data.frame()
-for(y in 1:length(yrs)){
+for(s in 1:length(spans)){
   
   # negative synchrony
+  span <- spans[s]
   ss <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "negative")==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   ss$at_least_two_shocks_down <- ss$at_least_three_shocks_down <- NA
-  ss$at_least_two_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_two(6,x))
-  ss$at_least_three_shocks_down <- apply(ss[,4:9], 1, function(x) get_at_least_three(6,x))
+  ss$at_least_two_shocks_down <- apply(ss[,5:10], 1, function(x) get_at_least_two(6,x))
+  ss$at_least_three_shocks_down <- apply(ss[,5:10], 1, function(x) get_at_least_three(6,x))
   
   ss <- ss %>% 
-    dplyr::select(regions, climates, years, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
-    group_by(regions, climates) %>% 
-    summarize(at_least_two_shocks_down = get_at_least_one(2099-yrs[y], at_least_two_shocks_down),
-              at_least_three_shocks_down = get_at_least_one(2099-yrs[y], at_least_three_shocks_down),
-              time_window = 2099-yrs[y])
+    dplyr::select(regions, climates, years, spans, at_least_two_shocks_down, at_least_three_shocks_down) %>% 
+    group_by(regions, climates, spans) %>% 
+    summarize(at_least_two_shocks_down = get_at_least_one(30, at_least_two_shocks_down),
+              at_least_three_shocks_down = get_at_least_one(30, at_least_three_shocks_down),
+              time_window = 30)
   
   # compensation
   # P(at least one shock up)
   cc_up <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_positive) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_positive) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "positive")==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   cc_up$at_least_one_shock_up <- NA
-  cc_up$at_least_one_shock_up <- apply(cc_up[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_up$at_least_one_shock_up <- apply(cc_up[,5:10], 1, function(x) get_at_least_one(6,x))
   cc_up$maize <- cc_up$qtot <- cc_up$rice <- cc_up$soybean <- cc_up$tcblog10 <- cc_up$wheat <- NULL
+  cc_up$spans <- NULL
   
   # P(at least one shock down)
   cc_down <- xx %>% 
-    filter(years>yrs[y],
-           years<2100) %>% 
-    dplyr::select(regions, climates, years, output_variable, shock_negative) %>% 
-    pivot_wider(names_from = output_variable, values_from = shock_negative) %>% 
+    filter(years>2069,
+           years<2100,
+           str_detect(spans, span)==TRUE,
+           str_detect(spans, "negative")==TRUE) %>% 
+    dplyr::select(regions, climates, years, output_variable, spans, shock) %>% 
+    pivot_wider(names_from = output_variable, values_from = shock) %>% 
     data.frame()
   
   cc_down$at_least_one_shock_down <- NA
-  cc_down$at_least_one_shock_down <- apply(cc_down[,4:9], 1, function(x) get_at_least_one(6,x))
+  cc_down$at_least_one_shock_down <- apply(cc_down[,5:10], 1, function(x) get_at_least_one(6,x))
   cc_down$maize <- cc_down$qtot <- cc_down$rice <- cc_down$soybean <- cc_down$tcblog10 <- cc_down$wheat <- NULL
+  cc_down$spans <- NULL
   
   # P(at least one shock up and one shock down)
   cc <- left_join(cc_up, cc_down) %>% 
     mutate(at_least_one_shock_up_down = at_least_one_shock_up*at_least_one_shock_down) %>% 
     group_by(regions, climates) %>% 
-    summarize(at_least_one_shock_up_down = get_at_least_one(2099-yrs[y], at_least_one_shock_up_down),
-              at_least_one_shock_up = get_at_least_one(2099-yrs[y], at_least_one_shock_up),
-              at_least_one_shock_down = get_at_least_one(2099-yrs[y], at_least_one_shock_down))
+    summarize(at_least_one_shock_up_down = get_at_least_one(30, at_least_one_shock_up_down),
+              at_least_one_shock_up = get_at_least_one(30, at_least_one_shock_up),
+              at_least_one_shock_down = get_at_least_one(30, at_least_one_shock_down))
   
-  yy <- left_join(ss, cc)
+  yy <- left_join(ss, cc) %>% 
+    mutate(spans = span)
   
-  if(y==1){shock_proba_rta_cs_mec <- yy
+  if(s==1){shock_proba_rta_cs_mec <- yy
   } else {shock_proba_rta_cs_mec <- rbind(shock_proba_rta_cs_mec,yy)}
   rm(yy)
 }
 
-write.csv(shock_proba_rta_cs_mec, file = "data/short-term_change/rta_shocks_1985-2015_probas_mechanisms.csv", 
+write.csv(shock_proba_rta_cs_mec, file = "data/short-term_change/rta_shocks_1985-2015_probas_spans_mechanisms.csv", 
           row.names = F)
