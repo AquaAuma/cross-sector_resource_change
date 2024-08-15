@@ -1,0 +1,78 @@
+---
+title: "Probability Independence for the compensation mechanisms"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(GGally)
+```
+
+# Check for probability independence
+
+The compensation probabilities rely on the product between probability of at least one resource going up and at least one resource going down. However, this formula is only correct if the two probabilities are independent, which may not be the case. Therefore, we check for independence for probabilities of at least three resources changing (up or down) and see whether they correlate.
+
+## Shock probabilities
+
+```{r, warning=FALSE, message=FALSE, fig.width=10}
+
+shock_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv")
+
+ggplot(shock_proba_r_cs_mec, aes(x = at_least_two_shocks_up, y = at_least_two_shocks_down, colour = as.factor(spans))) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  facet_wrap(~climates, scales = "free") +
+  geom_abline(aes(intercept = 0, slope = 1))
+
+ggplot(shock_proba_r_cs_mec, aes(x = at_least_three_shocks_up, y = at_least_three_shocks_down, colour = as.factor(spans))) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  facet_wrap(~climates, scales = "free") +
+  geom_abline(aes(intercept = 0, slope = 1))
+
+ggpairs(shock_proba_r_cs_mec, columns = c(4,10), aes(colour = climates))
+ggpairs(shock_proba_r_cs_mec, columns = c(5,11), aes(colour = climates))
+```
+
+## Gradual change probabilities
+
+```{r, warning=FALSE, message=FALSE, fig.width=10}
+
+change_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  filter(time_window == 30,
+         str_detect(type, "25")==TRUE,
+         str_detect(type, "up_down")==FALSE,
+         str_detect(type, "one")==FALSE) %>% 
+  pivot_wider(names_from = type, values_from = probas)
+  
+ggplot(change_proba_r_cs_mec, aes(x = at_least_two_25_up, y = at_least_two_25_down)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  facet_wrap(~climates, scales = "free") + xlim(0,1) + ylim(0,1) +
+  geom_abline(aes(intercept = 0, slope = 1))
+
+ggplot(change_proba_r_cs_mec, aes(x = at_least_three_25_up, y = at_least_three_25_down)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  facet_wrap(~climates, scales = "free") + xlim(0,1) + ylim(0,1) +
+  geom_abline(aes(intercept = 0, slope = 1))
+
+ggpairs(change_proba_r_cs_mec, columns = c(5,7), aes(colour = climates))
+ggpairs(change_proba_r_cs_mec, columns = c(6,8), aes(colour = climates))
+```
