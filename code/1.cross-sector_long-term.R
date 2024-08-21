@@ -1,5 +1,5 @@
 #### Process ISIMIP shocks data across sectors
-#### Coding: Aurore A. Maureaud, July 2024
+#### Coding: Aurore A. Maureaud, August 2024
 #### For more information about methods testing, see shock_detection.Rmd file
 
 # load libraries
@@ -163,10 +163,7 @@ for(y in 1:length(yrs)){
     summarize(change_5 = round(mean(change_5, na.rm=T),4),
               change_10 = round(mean(change_10, na.rm=T),4),
               change_25 = round(mean(change_25, na.rm=T),4)) %>% 
-    mutate(climates = paste(climate_model, experiment_climate),
-           change_5 = ifelse(is.na(change_5), 0, change_5),
-           change_10 = ifelse(is.na(change_10), 0, change_10),
-           change_25 = ifelse(is.na(change_25), 0, change_25)) %>% 
+    mutate(climates = paste(climate_model, experiment_climate)) %>% 
     group_by(spatial_scale, regions, climates) %>% 
     summarize(at_least_one_change_5 = get_at_least_one(6, change_5),
               at_least_two_change_5 = get_at_least_two(6, change_5),
@@ -300,10 +297,7 @@ for(y in 1:length(yrs)){
     summarize(change_5 = round(mean(change_5, na.rm=T),4),
               change_10 = round(mean(change_10, na.rm=T),4),
               change_25 = round(mean(change_25, na.rm=T),4)) %>% 
-    mutate(climates = paste(climate_model, experiment_climate),
-           change_5 = ifelse(is.na(change_5), 0, change_5),
-           change_10 = ifelse(is.na(change_10), 0, change_10),
-           change_25 = ifelse(is.na(change_25), 0, change_25)) %>% 
+    mutate(climates = paste(climate_model, experiment_climate)) %>% 
     group_by(spatial_scale, regions, climates) %>% 
     summarize(at_least_one_change_5 = get_at_least_one(6, change_5),
               at_least_two_change_5 = get_at_least_two(6, change_5),

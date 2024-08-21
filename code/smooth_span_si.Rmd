@@ -1,0 +1,57 @@
+---
+title: "Smooth span parameter sensitivity"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(GGally)
+```
+
+# Sensitivity of the shock metrics
+
+Testing the sensitivity of the shock probabilities to the smoother span selected to count shocks. Spans are tested from 0.25 to 0.75.
+
+```{r, warning=FALSE, message=FALSE, fig.height=7, fig.width=9}
+shock_probas_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  dplyr::select(-at_least_three_shocks_up, -at_least_two_shocks_up, -time_window,
+                -at_least_three_shocks_down, -at_least_one_shock_up) %>% 
+  mutate(spans = as.character(spans))
+
+shock_probas_r_cs <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  dplyr::select(-time_window)%>% 
+  mutate(spans = ifelse(str_detect(spans, "0.25"), "0.25", spans),
+         spans = ifelse(str_detect(spans, "0.5"), "0.5", spans),
+         spans = ifelse(str_detect(spans, "0.75"), "0.75", spans))
+
+spans_dat <- left_join(shock_probas_r_cs_mec, shock_probas_r_cs, by = c("climates", "regions", "spans")) %>% 
+  pivot_longer(4:9, names_to = "type", values_to = "probas") %>% 
+  pivot_wider(names_from = spans, values_from = probas) %>% 
+  filter(!type %in% c("at_least_one_shock","at_least_three_shocks","at_least_one_shock_down"))
+
+ggplot(spans_dat, aes(y = `0.25`, x = `0.75`)) + geom_point(alpha = 0.5) +
+  facet_grid(type ~ climates, scales = "free") + theme_bw() +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  geom_point(data = spans_dat, aes(y = `0.5`, x = `0.75`), col = "grey50", alpha = 0.5) +
+  theme(panel.background = element_blank()) +
+  xlab("Span of 0.75") + ylab("Span of 0.25 in black, 0.5 in grey")
+
+ggpairs(spans_dat, columns = c(4:6), aes(colour = type)) +
+  theme_bw() + theme(text = element_text(size = 16)) + theme_bw()
+```

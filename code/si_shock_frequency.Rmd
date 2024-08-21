@@ -273,7 +273,7 @@ annual_freq %>%
 
 To compare Figure 4 from the Cottrell et al., paper, I plotted the temporal trends in resource production for Afghanistan, Dominica, Ecuador, and Kuwait. Black vertical lines indicate the main events that are identified as co-occurring with resource shocks for the specific cases. Sometimes, the same sectors are not plotted in our figure because the resources as not modelled for that specific country. For instance, there are no crops trends for Dominica, because main agricultural products there are not the 4 main crops modelled by ISIMIP.
 
-```{r country plot, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+```{r country plot, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, include = FALSE}
 pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
 pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
 pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
@@ -305,7 +305,7 @@ pct_diff_ts_r_cs %>%
 
 To compare Figure 3 panel b with our estimates for the same list of countries and the two climate models, we calculated the number of resources for which a shock is identified by 5-year bins. Although the resources are not the same, we could expect similar cross-sector shock hotspots.
 
-```{r cs hear map, echo = FALSE, warning=FALSE, message=FALSE}
+```{r cs hear map, echo = FALSE, warning=FALSE, message=FALSE, include = FALSE}
 annual_freq <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 
   filter(!output_variable %in% c("tws","tcb","ptotww"),
          regions %in% c("Philippines","North Korea","Pakistan","Maldives","Afghanistan",

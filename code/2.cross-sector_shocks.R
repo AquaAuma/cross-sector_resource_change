@@ -156,15 +156,15 @@ xx <- read_csv("data/short-term_change/global_shocks_time_series_1985-2015_spans
          shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(climates, years, output_variable) %>% 
-  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
-            shock_0.75_positive = round(mean(shock_0.75_positive),4),
-            shock_0.75_sign = round(mean(shock_0.75_sign),4),
-            shock_0.5_negative = round(mean(shock_0.5_negative),4),
-            shock_0.5_positive = round(mean(shock_0.5_positive),4),
-            shock_0.5_sign = round(mean(shock_0.5_sign),4),
-            shock_0.25_negative = round(mean(shock_0.25_negative),4),
-            shock_0.25_positive = round(mean(shock_0.25_positive),4),
-            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative, na.rm=T),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive, na.rm=T),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign, na.rm=T),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative, na.rm=T),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive, na.rm=T),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign, na.rm=T),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative, na.rm=T),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive, na.rm=T),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign, na.rm=T),4)) %>% 
   pivot_longer(4:12, names_to = "spans", values_to = "shock")
 
 spans <- c("0.25","0.5","0.75")
@@ -371,6 +371,13 @@ for(s in 1:length(spans)){
 write.csv(shock_proba_r_cs, file = "data/short-term_change/countries_shocks_1985-2015_probas_spans.csv", 
           row.names = F)
 
+# problems with datasets: time-series are identical
+# so it comes from the probability calculations
+# if i take the average of ecological models but not all ecological models model
+# the specific resource, I get resources out from calculations
+
+
+
 # C. get probabilities of synchrony across models, sectors and time ----
 xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
@@ -388,15 +395,15 @@ xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015_sp
          shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
-            shock_0.75_positive = round(mean(shock_0.75_positive),4),
-            shock_0.75_sign = round(mean(shock_0.75_sign),4),
-            shock_0.5_negative = round(mean(shock_0.5_negative),4),
-            shock_0.5_positive = round(mean(shock_0.5_positive),4),
-            shock_0.5_sign = round(mean(shock_0.5_sign),4),
-            shock_0.25_negative = round(mean(shock_0.25_negative),4),
-            shock_0.25_positive = round(mean(shock_0.25_positive),4),
-            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative, na.rm=T),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive, na.rm=T),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign, na.rm=T),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative, na.rm=T),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive, na.rm=T),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign, na.rm=T),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative, na.rm=T),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive, na.rm=T),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign, na.rm=T),4)) %>% 
   pivot_longer(5:13, names_to = "spans", values_to = "shock")
 
 spans <- c("0.25","0.5","0.75")
@@ -622,15 +629,15 @@ xx <- read_csv("data/short-term_change/rta_shocks_time_series_1985-2015_spans.cs
         shock_0.25_sign = ifelse(shock_0.25_up>0, shock_0.25, -shock_0.25_down)) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
-  summarize(shock_0.75_negative = round(mean(shock_0.75_negative),4),
-            shock_0.75_positive = round(mean(shock_0.75_positive),4),
-            shock_0.75_sign = round(mean(shock_0.75_sign),4),
-            shock_0.5_negative = round(mean(shock_0.5_negative),4),
-            shock_0.5_positive = round(mean(shock_0.5_positive),4),
-            shock_0.5_sign = round(mean(shock_0.5_sign),4),
-            shock_0.25_negative = round(mean(shock_0.25_negative),4),
-            shock_0.25_positive = round(mean(shock_0.25_positive),4),
-            shock_0.25_sign = round(mean(shock_0.25_sign),4)) %>% 
+  summarize(shock_0.75_negative = round(mean(shock_0.75_negative, na.rm=T),4),
+            shock_0.75_positive = round(mean(shock_0.75_positive, na.rm=T),4),
+            shock_0.75_sign = round(mean(shock_0.75_sign, na.rm=T),4),
+            shock_0.5_negative = round(mean(shock_0.5_negative, na.rm=T),4),
+            shock_0.5_positive = round(mean(shock_0.5_positive, na.rm=T),4),
+            shock_0.5_sign = round(mean(shock_0.5_sign, na.rm=T),4),
+            shock_0.25_negative = round(mean(shock_0.25_negative, na.rm=T),4),
+            shock_0.25_positive = round(mean(shock_0.25_positive, na.rm=T),4),
+            shock_0.25_sign = round(mean(shock_0.25_sign, na.rm=T),4)) %>% 
   pivot_longer(5:13, names_to = "spans", values_to = "shock")
 
 spans <- c("0.25","0.5","0.75")

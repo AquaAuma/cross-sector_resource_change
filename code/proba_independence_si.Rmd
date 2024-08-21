@@ -30,7 +30,7 @@ The compensation probabilities rely on the product between probability of at lea
 
 ## Shock probabilities
 
-```{r, warning=FALSE, message=FALSE, fig.width=10}
+```{r, warning=FALSE, message=FALSE}
 
 shock_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv")
 
@@ -38,21 +38,29 @@ ggplot(shock_proba_r_cs_mec, aes(x = at_least_two_shocks_up, y = at_least_two_sh
   geom_point(alpha = 0.5) +
   theme_bw() +
   facet_wrap(~climates, scales = "free") +
-  geom_abline(aes(intercept = 0, slope = 1))
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 16)) +
+  ggtitle("Relationships p(2 shocks up) and p(2 shocks down)")
 
 ggplot(shock_proba_r_cs_mec, aes(x = at_least_three_shocks_up, y = at_least_three_shocks_down, colour = as.factor(spans))) +
   geom_point(alpha = 0.5) +
   theme_bw() +
   facet_wrap(~climates, scales = "free") +
-  geom_abline(aes(intercept = 0, slope = 1))
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 16)) +
+  ggtitle("Relationships p(3 shocks up) and p(3 shocks down)")
 
-ggpairs(shock_proba_r_cs_mec, columns = c(4,10), aes(colour = climates))
-ggpairs(shock_proba_r_cs_mec, columns = c(5,11), aes(colour = climates))
+ggpairs(shock_proba_r_cs_mec, columns = c(4,10), aes(colour = climates)) +
+  theme_bw() + theme(text = element_text(size = 16)) +
+  ggtitle("Correlation p(2 shocks up) and p(2 shocks down)")
+ggpairs(shock_proba_r_cs_mec, columns = c(5,11), aes(colour = climates)) +
+  theme_bw() + theme(text = element_text(size = 16)) +
+  ggtitle("Correlation p(3 shocks up) and p(3 shocks down)")
 ```
 
 ## Gradual change probabilities
 
-```{r, warning=FALSE, message=FALSE, fig.width=10}
+```{r, warning=FALSE, message=FALSE}
 
 change_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
   filter(time_window == 30,
@@ -65,14 +73,22 @@ ggplot(change_proba_r_cs_mec, aes(x = at_least_two_25_up, y = at_least_two_25_do
   geom_point(alpha = 0.5) +
   theme_bw() +
   facet_wrap(~climates, scales = "free") + xlim(0,1) + ylim(0,1) +
-  geom_abline(aes(intercept = 0, slope = 1))
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 16)) +
+  ggtitle("Relationships p(2 increases) and p(2 decreases)")
 
 ggplot(change_proba_r_cs_mec, aes(x = at_least_three_25_up, y = at_least_three_25_down)) +
   geom_point(alpha = 0.5) +
   theme_bw() +
   facet_wrap(~climates, scales = "free") + xlim(0,1) + ylim(0,1) +
-  geom_abline(aes(intercept = 0, slope = 1))
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 16)) +
+  ggtitle("Relationships p(3 increases) and p(3 decreases)")
 
-ggpairs(change_proba_r_cs_mec, columns = c(5,7), aes(colour = climates))
-ggpairs(change_proba_r_cs_mec, columns = c(6,8), aes(colour = climates))
+ggpairs(change_proba_r_cs_mec, columns = c(5,7), aes(colour = climates)) +
+  theme_bw() + theme(text = element_text(size = 16)) +
+  ggtitle("Correlation p(3 increases) and p(3 decreases)")
+ggpairs(change_proba_r_cs_mec, columns = c(6,8), aes(colour = climates)) +
+  theme_bw() + theme(text = element_text(size = 16)) +
+  ggtitle("Correlation p(3 increases) and p(3 decreases)")
 ```

@@ -122,7 +122,7 @@ plot_ts_10th <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() +
   ggtitle("End of century average beyond 10th percentile of historical period") +
   theme(legend.position = "none") +
   geom_hline(aes(yintercept = 0), linetype = "dashed") +
-  annotate("rect", xmin = -Inf, xmax = Inf, ymin = quantile(ts_ex$percent_diff[1:33], probs = .05), ymax = quantile(ts_ex$percent_diff[1:33], probs = .95), fill = "lightgreen", alpha = .5) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = quantile(ts_ex$percent_diff[1:33], probs = .10), ymax = quantile(ts_ex$percent_diff[1:33], probs = .90), fill = "lightgreen", alpha = .5) +
   geom_segment(aes(x = 2085, xend = 2085, y = quantile(ts_ex$percent_diff[1:33], probs = .1),
                    yend = avg), arrow = arrow(length = unit(0.5, "cm")),
                colour = "forestgreen", size = 0.5)+
@@ -132,6 +132,52 @@ plot_ts_10th <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() +
 grid.arrange(plot_ts_avg, plot_ts_10th,
              plot_shock0.25, plot_shock0.5, plot_shock0.75, 
              nrow = 2)
+```
+
+## SSP effect on maize crops in the United States
+
+```{r, warning=FALSE, message=FALSE, fig.width=10}
+
+y <- ts %>% 
+    filter(years<2100,
+           output_variable=="maize",
+           regions == "United States") %>% 
+    data.frame() %>% 
+    group_by(sector, spatial_scale, regions, eco_model, climate_model, experiment_climate, output_variable) %>% 
+    summarize(percentile_90 = as.vector(quantile(percent_diff[1:33], 0.90, na.rm=TRUE)),
+              percentile_10 = as.vector(quantile(percent_diff[1:33], 0.10, na.rm=TRUE)),
+              percent_diff = mean(percent_diff[88:117], na.rm=T)) %>% 
+    mutate(change_5 = ifelse(percent_diff>5 | percent_diff<(-5), 1, 0),
+           change_10 = ifelse(percent_diff>10 | percent_diff<(-10), 1, 0),
+           change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+           change_pct = ifelse(percent_diff<percentile_10 | percent_diff>percentile_90, 1, 0)) %>% 
+    group_by(sector, spatial_scale, regions, climate_model, experiment_climate, output_variable) %>% 
+    summarize(change_5 = round(mean(change_5, na.rm=T),4),
+              change_10 = round(mean(change_10, na.rm=T),4),
+              change_25 = round(mean(change_25, na.rm=T),4),
+              change_pct = round(mean(change_pct, na.rm=T),4)) %>% 
+    mutate(climates = paste(climate_model, experiment_climate)) %>% 
+    group_by(spatial_scale, regions, climates) %>% 
+    summarize(at_least_one_change_5 = get_at_least_one(6, change_5),
+              at_least_two_change_5 = get_at_least_two(6, change_5),
+              at_least_three_change_5 = get_at_least_three(6, change_5),
+              at_least_one_change_10 = get_at_least_one(6, change_10),
+              at_least_two_change_10 = get_at_least_two(6, change_10),
+              at_least_three_change_10 = get_at_least_three(6, change_10),
+              at_least_one_change_25 = get_at_least_one(6, change_25),
+              at_least_two_change_25 = get_at_least_two(6, change_25),
+              at_least_three_change_25 = get_at_least_three(6, change_25),
+              at_least_one_change_pct = get_at_least_one(6, change_pct),
+              at_least_two_change_pct = get_at_least_two(6, change_pct),
+              at_least_three_change_pct = get_at_least_three(6, change_pct)) %>% 
+    pivot_longer(4:15, names_to = "type", values_to = "probas") %>% 
+  mutate(n_res = ifelse(str_detect(type, "one")==TRUE, "1", NA),
+         n_res = ifelse(str_detect(type, "two")==TRUE, "2", n_res),
+         n_res = ifelse(str_detect(type, "three")==TRUE, "3", n_res),
+         threshold = ifelse(str_detect(type, "5")==TRUE, "5", NA),
+         threshold = ifelse(str_detect(type, "10")==TRUE, "10", threshold),
+         threshold = ifelse(str_detect(type, "25")==TRUE, "25", threshold),
+         threshold = ifelse(str_detect(type, "pct")==TRUE, "pct", threshold))
 ```
 
 ## How often are 10th percentile limits reached per sector?
@@ -174,12 +220,13 @@ y <- ts %>%
            !output_variable %in% c("ptotww","tcb","tws")) %>% 
     data.frame() %>% 
     group_by(sector, spatial_scale, regions, eco_model, climate_model, experiment_climate, output_variable) %>% 
-    summarize(percent_diff = mean(percent_diff[88:117], na.rm=T)) %>% 
+    summarize(percentile_90 = as.vector(quantile(percent_diff[1:33], 0.90, na.rm=TRUE)),
+              percentile_10 = as.vector(quantile(percent_diff[1:33], 0.10, na.rm=TRUE)),
+              percent_diff = mean(percent_diff[88:117], na.rm=T)) %>% 
     mutate(change_5 = ifelse(percent_diff>5 | percent_diff<(-5), 1, 0),
            change_10 = ifelse(percent_diff>10 | percent_diff<(-10), 1, 0),
            change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
-           change_pct = ifelse(percent_diff>0 & percent_diff<quantile(percent_diff[1:33], probs = .05, na.rm=T), 1, 0),
-           change_pct = ifelse(percent_diff>0 & percent_diff>quantile(percent_diff[1:33], probs = .95, na.rm=T), 1, 0)) %>% 
+           change_pct = ifelse(percent_diff<percentile_10 | percent_diff>percentile_90, 1, 0)) %>% 
     group_by(sector, spatial_scale, regions, climate_model, experiment_climate, output_variable) %>% 
     summarize(change_5 = round(mean(change_5, na.rm=T),4),
               change_10 = round(mean(change_10, na.rm=T),4),
@@ -208,9 +255,9 @@ y <- ts %>%
          threshold = ifelse(str_detect(type, "25")==TRUE, "25", threshold),
          threshold = ifelse(str_detect(type, "pct")==TRUE, "pct", threshold))
   
-s <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas.csv") %>% 
-  filter(time_window == 30) %>% 
-  pivot_longer(3:5, names_to = "type", values_to = "probas") %>% 
+s <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  pivot_longer(4:6, names_to = "type", values_to = "probas") %>% 
   mutate(spatial_scale = "regions",
          n_res = ifelse(str_detect(type, "one")==TRUE, "1", NA),
          n_res = ifelse(str_detect(type, "two")==TRUE, "2", n_res),
@@ -227,5 +274,36 @@ ggplot(yy, aes(x = threshold, y = probas, fill = climates)) + geom_boxplot() +
   scale_fill_manual(values = c("plum","purple4","lightskyblue","blue")) +
   scale_x_discrete(limits = c("5","10","25","pct","shock")) +
   xlab("Metric") + ylab("Country probabilities")
-  
+
+```
+
+The plots below detail the correlation and relationships between the probability of at least two shock, the probability of at least 2 resources changing beyond 25% and the probability of at least 2 resources changing beyond the 10th or 90th percentile by the end of century by climate model and experiment. The Blue line is a loess smoother.
+
+```{r relationships, warning=FALSE, message=FALSE, fig.width=7, fig.height = 3}
+
+zz <- yy %>% 
+  filter(type %in% c("at_least_two_change_25","at_least_two_change_pct","at_least_two_shocks")) %>% 
+  dplyr::select(-threshold) %>% 
+  pivot_wider(values_from = probas, names_from = type)
+
+zz %>% 
+  ggplot(aes(x = at_least_two_change_25, y = at_least_two_change_pct)) +
+  geom_point() + theme_bw() +
+  facet_wrap(~climates) +
+  geom_smooth(stats="loess") +
+  geom_abline(aes(intercept=0, slope=1), linetype="dashed")
+
+zz %>% 
+  ggplot(aes(x = at_least_two_shocks, y = at_least_two_change_pct)) +
+  geom_point() + theme_bw() +
+  facet_wrap(~climates) +
+  geom_smooth(stats="loess") +
+  geom_abline(aes(intercept=0, slope=1), linetype="dashed")
+
+zz %>% 
+  ggplot(aes(x = at_least_two_shocks, y = at_least_two_change_25)) +
+  geom_point() + theme_bw() +
+  facet_wrap(~climates) +
+  geom_smooth(stats="loess") +
+  geom_abline(aes(intercept=0, slope=1), linetype="dashed")
 ```
