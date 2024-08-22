@@ -269,6 +269,345 @@ annual_freq %>%
   ggtitle("WHEAT")
 ```
 
+## Decomposing the method for one fisheries model
+
+### Apecosm metrics for IPSL SSP 5.85 in the United States
+
+```{r apecosm, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+# load data
+pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+ts <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa) %>% 
+  mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/"))
+rm(pct_diff_ts_r_cs_wa, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_ag)
+
+ts_ex <- ts %>% 
+  filter(output_variable == "tcblog10",
+         climate_model == "ipsl-cm6a-lr",
+         experiment_climate == "ssp585",
+         regions == "United States",
+         eco_model == "apecosm")
+
+
+# long-term change with threshold
+avg <- mean(ts_ex$percent_diff[88:117], na.rm=T)
+
+plot_ts_avg <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -5, ymax = 0, alpha = .4, fill = "plum") +
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = -10, ymax = -5, alpha = .4, fill = "orchid3") +
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = -10, alpha = .4, fill = "purple") +
+annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_segment(aes(x = 2070, y = avg, xend = 2099, yend = avg), colour = "purple") +
+  ggtitle("End of century average beyond % threshold") +
+  theme(legend.position = "none") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed") +
+  geom_segment(aes(x = 2085, xend = 2085, y = 0, yend = avg), arrow = arrow(length = unit(0.5, "cm")),colour = "purple", size = 0.5) +
+   theme(plot.title = element_text(size = 10))
+  
+
+# count shocks
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.75)
+ts_ex$res_0.75 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.5)
+ts_ex$res_0.5 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.25)
+ts_ex$res_0.25 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+rm(model_smooth)
+
+ts_ex <- ts_ex %>% 
+  mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+         shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+         shock_0.5 = ifelse(res_0.5>2, 1, 0),
+         shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+         shock_0.25 = ifelse(res_0.25>2, 1, 0),
+         shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25))
+
+plot_shock0.75 <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.75==1,], col = "red") +
+  ggtitle("Smooth with span of 0.75") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.75, col = "red", level = 0.95)
+
+plot_shock0.5 <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.5==1,], col = "orange") +
+  ggtitle("Smooth with span of 0.5") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.5, col = "orange", level = 0.95)
+
+plot_shock0.25 <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.25==1,], col = "yellow") +
+  ggtitle("Smooth with span of 0.25") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.25, col = "yellow", level = 0.95)
+
+# signal-to-noise ratio
+plot_ts_10th <- ggplot(ts_ex, aes(x = years, y = percent_diff)) + geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_segment(aes(x = 2070, y = avg, xend = 2099, yend = avg), colour = "forestgreen") +
+  ggtitle("End of century average beyond 10th percentile of historical period") +
+  theme(legend.position = "none") +
+  geom_hline(aes(yintercept = 0), linetype = "dashed") +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = quantile(ts_ex$percent_diff[1:33], probs = .10), ymax = quantile(ts_ex$percent_diff[1:33], probs = .90), fill = "lightgreen", alpha = .5) +
+  geom_segment(aes(x = 2085, xend = 2085, y = quantile(ts_ex$percent_diff[1:33], probs = .1),
+                   yend = avg), arrow = arrow(length = unit(0.5, "cm")),
+               colour = "forestgreen", size = 0.5)+
+   theme(plot.title = element_text(size = 10))
+
+# summary panel plot
+grid.arrange(plot_ts_avg, plot_ts_10th,
+             plot_shock0.25, plot_shock0.5, plot_shock0.75, 
+             nrow = 2)
+
+
+
+```
+
+### Apecosm for several countries and IPSL SSP 585
+
+```{r apecosm countries, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+regions <- c("United States","France","Argentina","Peru","Australia","China",
+             "Russia","Norway","Canada","South Africa","Namibia","Madagascar",
+             "Indonesia","Japan","Spain","Greece","United Kingdom","Uruguay")
+
+for (r in 1:length(regions)){
+  region <- regions[r]
+  ts_ex <- ts %>% 
+  filter(output_variable == "tcblog10",
+         climate_model == "ipsl-cm6a-lr",
+         experiment_climate == "ssp585",
+         eco_model == "apecosm",
+         regions == region)
+  
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.75)
+ts_ex$res_0.75 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.5)
+ts_ex$res_0.5 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.25)
+ts_ex$res_0.25 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+rm(model_smooth)
+
+ts_ex <- ts_ex %>% 
+  mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+         shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+         shock_0.5 = ifelse(res_0.5>2, 1, 0),
+         shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+         shock_0.25 = ifelse(res_0.25>2, 1, 0),
+         shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25))
+
+assign(paste0("plot0.75_",r),
+        ggplot(ts_ex, aes(x = years, y = percent_diff)) +
+  geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.75==1,], col = "red") +
+  ggtitle(region) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.75, col = "red", level = 0.95))
+
+}
+
+# summary panel plot
+grid.arrange(plot0.75_1, plot0.75_2, plot0.75_3,
+             plot0.75_4, plot0.75_5, plot0.75_6,
+             plot0.75_7, plot0.75_8, plot0.75_9,
+             plot0.75_10, plot0.75_11, plot0.75_12,
+             plot0.75_13, plot0.75_14, plot0.75_15,
+             plot0.75_16, plot0.75_17, plot0.75_18,
+             nrow = 5)
+```
+
+### BOATS for several countries and IPSL SSP 585
+
+```{r boats countries, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+regions <- c("United States","France","Argentina","Peru","Australia","China",
+             "Russia","Norway","Canada","South Africa","Namibia","Madagascar",
+             "Indonesia","Japan","Spain","Greece","United Kingdom","Uruguay")
+
+for (r in 1:length(regions)){
+  region <- regions[r]
+  ts_ex <- ts %>% 
+  filter(output_variable == "tcblog10",
+         climate_model == "ipsl-cm6a-lr",
+         experiment_climate == "ssp585",
+         eco_model == "boats",
+         regions == region)
+  
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.75)
+ts_ex$res_0.75 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.5)
+ts_ex$res_0.5 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.25)
+ts_ex$res_0.25 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+rm(model_smooth)
+
+ts_ex <- ts_ex %>% 
+  mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+         shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+         shock_0.5 = ifelse(res_0.5>2, 1, 0),
+         shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+         shock_0.25 = ifelse(res_0.25>2, 1, 0),
+         shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25))
+
+assign(paste0("plot0.75_",r),
+        ggplot(ts_ex, aes(x = years, y = percent_diff)) +
+  geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.75==1,], col = "red") +
+  ggtitle(region) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.75, col = "red", level = 0.95))
+
+}
+
+# summary panel plot
+grid.arrange(plot0.75_1, plot0.75_2, plot0.75_3,
+             plot0.75_4, plot0.75_5, plot0.75_6,
+             plot0.75_7, plot0.75_8, plot0.75_9,
+             plot0.75_10, plot0.75_11, plot0.75_12,
+             plot0.75_13, plot0.75_14, plot0.75_15,
+             plot0.75_16, plot0.75_17, plot0.75_18,
+             nrow = 5)
+
+```
+
+### DPBM for several countries and IPSL SSP 585
+
+```{r dbpm countries, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+regions <- c("United States","France","Argentina","Peru","Australia","China",
+             "Russia","Norway","Canada","South Africa","Namibia","Madagascar",
+             "Indonesia","Japan","Spain","Greece","United Kingdom","Uruguay")
+
+for (r in 1:length(regions)){
+  region <- regions[r]
+  ts_ex <- ts %>% 
+  filter(output_variable == "tcblog10",
+         climate_model == "ipsl-cm6a-lr",
+         experiment_climate == "ssp585",
+         eco_model == "dbpm",
+         regions == region)
+  
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.75)
+ts_ex$res_0.75 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.5)
+ts_ex$res_0.5 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.25)
+ts_ex$res_0.25 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+rm(model_smooth)
+
+ts_ex <- ts_ex %>% 
+  mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+         shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+         shock_0.5 = ifelse(res_0.5>2, 1, 0),
+         shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+         shock_0.25 = ifelse(res_0.25>2, 1, 0),
+         shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25))
+
+assign(paste0("plot0.75_",r),
+        ggplot(ts_ex, aes(x = years, y = percent_diff)) +
+  geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.75==1,], col = "red") +
+  ggtitle(region) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.75, col = "red", level = 0.95))
+
+}
+
+# summary panel plot
+grid.arrange(plot0.75_1, plot0.75_2, plot0.75_3,
+             plot0.75_4, plot0.75_5, plot0.75_6,
+             plot0.75_7, plot0.75_8, plot0.75_9,
+             plot0.75_10, plot0.75_11, plot0.75_12,
+             plot0.75_13, plot0.75_14, plot0.75_15,
+             plot0.75_16, plot0.75_17, plot0.75_18,
+             nrow = 5)
+```
+
+### ZooMSS for several countries and IPSL SSP 585
+
+```{r zoomss countries, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+regions <- c("United States","France","Argentina","Peru","Australia","China",
+             "Russia","Norway","Canada","South Africa","Namibia","Madagascar",
+             "Indonesia","Japan","Spain","Greece","United Kingdom","Uruguay")
+
+for (r in 1:length(regions)){
+  region <- regions[r]
+  ts_ex <- ts %>% 
+  filter(output_variable == "tcblog10",
+         climate_model == "ipsl-cm6a-lr",
+         experiment_climate == "ssp585",
+         eco_model == "zoomss",
+         regions == region)
+  
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.75)
+ts_ex$res_0.75 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.5)
+ts_ex$res_0.5 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+
+model_smooth <- loess(ts_ex$percent_diff ~ ts_ex$years, span = 0.25)
+ts_ex$res_0.25 <- (model_smooth$residuals - mean(model_smooth$residuals))/sd(model_smooth$residuals)
+rm(model_smooth)
+
+ts_ex <- ts_ex %>% 
+  mutate(shock_0.75 = ifelse(res_0.75>2, 1, 0),
+         shock_0.75 = ifelse(res_0.75<(-2), 1, shock_0.75),
+         shock_0.5 = ifelse(res_0.5>2, 1, 0),
+         shock_0.5 = ifelse(res_0.5<(-2), 1, shock_0.5),
+         shock_0.25 = ifelse(res_0.25>2, 1, 0),
+         shock_0.25 = ifelse(res_0.25<(-2), 1, shock_0.25))
+
+assign(paste0("plot0.75_",r),
+        ggplot(ts_ex, aes(x = years, y = percent_diff)) +
+  geom_point() + geom_line() +
+  theme_bw() + xlab("Years") + ylab("% Difference") +
+  annotate("rect", xmin = 1983, xmax = 2015, ymin = -Inf, ymax = Inf, alpha = .2) +
+  geom_point(data = ts_ex[ts_ex$shock_0.75==1,], col = "red") +
+  ggtitle(region) +
+  geom_hline(aes(yintercept = 0), linetype = "dashed")+
+   theme(plot.title = element_text(size = 10)) +
+  geom_smooth(span = 0.75, col = "red", level = 0.95))
+
+}
+
+# summary panel plot
+grid.arrange(plot0.75_1, plot0.75_2, plot0.75_3,
+             plot0.75_4, plot0.75_5, plot0.75_6,
+             plot0.75_7, plot0.75_8, plot0.75_9,
+             plot0.75_10, plot0.75_11, plot0.75_12,
+             plot0.75_13, plot0.75_14, plot0.75_15,
+             plot0.75_16, plot0.75_17, plot0.75_18,
+             nrow = 5)
+```
+
 ## Cross-sector temporal trends
 
 To compare Figure 4 from the Cottrell et al., paper, I plotted the temporal trends in resource production for Afghanistan, Dominica, Ecuador, and Kuwait. Black vertical lines indicate the main events that are identified as co-occurring with resource shocks for the specific cases. Sometimes, the same sectors are not plotted in our figure because the resources as not modelled for that specific country. For instance, there are no crops trends for Dominica, because main agricultural products there are not the 4 main crops modelled by ISIMIP.

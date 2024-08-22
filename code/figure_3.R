@@ -315,3 +315,15 @@ dat_ecology %>%
                         "China","Ukraine","Madagascar","Sweden",
                         "Ecuador","Kuwait"))
 
+dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T),
+            min = min(proba, na.rm=T),
+            max = max(proba, na.rm=T)) %>% 
+  group_by(scale) %>% 
+  summarize(median = median(overall, na.rm=T),
+            min = min(overall, na.rm=T),
+            max = max(overall, na.rm=T))
+
