@@ -1,0 +1,766 @@
+---
+title: "Decomposing the country-to-RTA ratios"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+
+source("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/functions/get_probas.R")
+```
+
+Exploration of the country-to-RTA ratios for two opposed RTAs in terms of the climate exposure scores under SSP 5.85: the EU and MERCOSUR.
+
+## EU country-to-RTA ratios
+
+The EU counts 27 current signatories. Here, I decompose the country-to-RTA ratios to understand the underlying dynamics happening for EU countries part of the RTA and the RTA aggregate resource trends. We constrain this exploration to SSP 5.85.
+
+### 1. Gradual change
+
+Gradual change is the average % difference over 2070-2099 compared to the historical reference period 1985-2015.
+
+#### 1.a. Resource trends
+
+Resources included are total water runoff, fish exploitable biomass, and maize, soybean, rice, and wheat crop yields.
+
+```{r resource trends EU, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+# load time-series data for the EU RTA
+pct_diff_ts_rta_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_agriculture.csv") %>% 
+  dplyr::rename(regions = rtas)
+pct_diff_ts_rta_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_rta_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_water_global.csv")
+ts_rta <- rbind(pct_diff_ts_rta_cs_ag, pct_diff_ts_rta_cs_fi, pct_diff_ts_rta_cs_wa) %>% 
+  mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/")) %>% 
+  filter(regions == 120,
+         experiment_climate == "ssp585",
+         !output_variable %in% c("tcb","ptotww","tws"))
+rm(pct_diff_ts_rta_cs_wa, pct_diff_ts_rta_cs_fi, pct_diff_ts_rta_cs_ag)
+
+ggplot(ts_rta, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_line(alpha= 0.8, col = "grey") +
+  geom_smooth(aes(group = eco_model), method = "loess", span = 0.75, col = "lightskyblue") +
+  geom_smooth(method = "loess", span = 0.75, col = "navyblue") +
+  facet_grid(climate_model ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("EU resource trends")
+
+```
+
+```{r resource trends EU countries, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=30}
+
+# load time-series data for countries
+pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+ts <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa) %>% 
+  mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/")) %>% 
+  filter(regions %in% c("Austria","Belgium","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Ireland","Italy","Latvia","Lithuania","Grand Duchy of Luxembourg","Malta","Netherlands","Poland","Portugal","Romania","Slovakia","Slovenia","Spain","Sweden"),
+         experiment_climate == "ssp585",
+         !output_variable %in% c("tcb","ptotww","tws"))
+rm(pct_diff_ts_r_cs_wa, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_ag)
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_line(aes(group = eco_model, colour = climate_model), alpha= 0.5) +
+  scale_colour_manual(values = c("grey20","grey80")) +
+  geom_smooth(aes(colour = climate_model), method = "loess", span = 0.75) +
+  facet_grid(regions ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("EU country resource trends")
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  #geom_line(aes(group = eco_model, colour = climate_model), alpha= 0.5) +
+  scale_colour_manual(values = c("grey20","grey80")) +
+  geom_smooth(aes(colour = climate_model), method = "loess", span = 0.75) +
+  facet_grid(regions ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("EU country resource trends")
+```
+
+```{r compare RTA and countries, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=4}
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_smooth(aes(group = regions), method = "loess", span = 0.75, col = "grey40") +
+  geom_smooth(data = ts_rta, aes(x = years, y = percent_diff), col = "red") +
+  facet_grid(climate_model ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("Country and RTA resource trends")
+
+```
+
+#### 1.b. Pseudo-probabilities
+
+Probabilities of gradual change occurrence across resources are the probabilities that at least 2 resources change beyond 25% (by a decrease or an increase) by the end of the century for all countries and the entire EU.
+
+```{r proportion of increase-decrease, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=10}
+
+ts_prop <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T))
+
+ts_rta_prop <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T)) %>% 
+  mutate(regions = "EU")
+
+ts_prop <- rbind(ts_prop, ts_rta_prop)
+
+ggplot(ts_prop, aes(x = regions, y = prop)) + geom_bar(aes(fill = climate_model), stat = "identity",
+                                                       position = "dodge") +
+  scale_fill_manual(values = c("grey","grey30")) +
+  theme_bw() +
+  facet_wrap(~output_variable, ncol = 1) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) +
+  geom_bar(data = ts_prop[ts_prop$regions=="EU",], aes(x = regions, y = prop, fill = climate_model),
+           stat = "identity",position="dodge",colour = "red") +
+  ggtitle("% of ecological models exceeding 25% difference")
+```
+
+We repeat this analysis for increasing resources, and decreasing resources.
+
+```{r proportion of models with sign, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=10}
+ts_prop <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25, 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T))
+
+ts_rta_prop <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25, 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  mutate(regions = "EU")
+
+ts_prop <- rbind(ts_prop, ts_rta_prop) %>% 
+  pivot_longer(5:7, names_to = "type", values_to = "prop")
+
+ggplot(ts_prop, aes(x = regions, y = prop, group = type)) + geom_bar(aes(fill = type), stat = "identity",
+                                                       position = "dodge") +
+  scale_fill_manual(values = c("grey30","darksalmon","darkseagreen")) +
+  theme_bw() +
+  facet_grid(output_variable~climate_model) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0),
+        legend.position = "bottom") +
+  geom_bar(data = ts_prop[ts_prop$regions=="EU",], aes(x = regions, y = prop, fill = type, group = type),
+           stat = "identity",position="dodge",colour = "red") +
+  ggtitle("% of ecological models beyond 25% change, increase, or decrease")
+```
+
+#### 1.c. Probabilities
+
+We calculate the probabilities of overall change, synchrony and compensation per country/RTA and per climate model for SSP 5.85, and compare the values of the countries compared to the RTA.
+
+```{r gradual probabilities EU, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=10}
+
+ts_prob <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0),
+         change_25_less = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_less)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, regions) %>% 
+  summarize(at_least_two_change_25 = get_at_least_two(6, prop),
+            at_least_two_25_down = get_at_least_two(6, prop_decrease),
+            at_least_one_25_down = get_at_least_one(6, prop_decrease),
+            at_least_one_25_up = get_at_least_one(6, prop_increase),
+            at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down) %>% 
+  pivot_longer(4:8, names_to = "type", values_to = "prob") %>% 
+  filter(type %in% c("at_least_two_change_25","at_least_two_25_down","at_least_one_25_up_down"))
+
+ts_rta_prob <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0),
+         change_25_less = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_less)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  mutate(regions = "EU") %>% 
+    group_by(climate_model, experiment_climate, regions) %>% 
+  summarize(at_least_two_change_25 = get_at_least_two(6, prop),
+            at_least_two_25_down = get_at_least_two(6, prop_decrease),
+            at_least_one_25_down = get_at_least_one(6, prop_decrease),
+            at_least_one_25_up = get_at_least_one(6, prop_increase),
+            at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down) %>% 
+    pivot_longer(4:8, names_to = "type", values_to = "prob") %>% 
+  filter(type %in% c("at_least_two_change_25","at_least_two_25_down","at_least_one_25_up_down"))
+
+ts_prob <- rbind(ts_prob, ts_rta_prob)
+  
+ggplot(ts_prob, aes(x = regions, y = prob)) +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = climate_model)) +
+  scale_fill_manual(values = c("grey","grey30")) +
+  theme_bw() +
+  facet_wrap(~type, ncol =1) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0),
+        legend.position = "bottom") +
+    geom_bar(data = ts_prob[ts_prob$regions=="EU",], aes(x = regions, y = prob, fill = climate_model),
+           stat = "identity",position="dodge",colour = "red") +
+  geom_hline(data = ts_prob[ts_prob$regions=="EU",], aes(yintercept = prob), col = "red",
+             linetype = "dashed")
+```
+
+### 2. Shocks
+
+Abrupt change is measured with the occurrence of resource shocks over 2070-2099.
+
+#### 2.a. Shock pseudo-probability time-series
+
+Resources included are total water runoff, fish exploitable biomass, and maize, soybean, rice, and wheat crop yields.
+
+```{r rta shock occurrence, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=3}
+
+shocks_rta <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions == 120) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -shock_up,
+                -shock_down, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2))
+
+ggplot(shocks_rta, aes(x = years, y = shock)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  facet_grid(climate_model ~ output_variable) +
+  ggtitle("EU shock occurrence through time") +
+  ylab("prop of models detecting a shock")
+```
+
+```{r rta shock occurrence w. sign, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+
+shocks_rta <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions == 120) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2),
+            shock_up = round(mean(shock_up, na.rm=T),2),
+            shock_down = round(mean(shock_down, na.rm=T),2)) %>% 
+  pivot_longer(5:7, names_to = "type", values_to = "prop")
+
+ggplot(shocks_rta, aes(x = years, y = prop, col = type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_color_manual(values = c("grey30","darksalmon","darkseagreen")) +
+  theme_bw() +
+  facet_grid(output_variable ~ climate_model) +
+  ggtitle("EU shock occurrence through time") +
+  ylab("prop of models detecting a shock") +
+  theme(legend.position = "bottom")
+```
+
+```{r cnt shock occurrence, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=30}
+
+shocks <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions %in% c("Austria","Belgium","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Ireland","Italy","Latvia","Lithuania","Grand Duchy of Luxembourg","Malta","Netherlands","Poland","Portugal","Romania","Slovakia","Slovenia","Spain","Sweden")) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -shock_up,
+                -shock_down, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2))
+    
+  
+ggplot(shocks, aes(x = years, y = shock, color = climate_model)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  scale_color_manual(values = c("grey20","grey80")) +
+  facet_grid(regions ~ output_variable) +
+  ggtitle("EU country shock occurrence through time") +
+  ylab("prop of models detecting a shock") +
+  theme(legend.position = "none")
+
+```
+
+#### 2.b. Probabilities
+
+We calculate the probabilities of overall change, synchrony, and compensation per country/RTA and per climate model for SSP 5.85, and compare the values of the countries compared to the RTA.
+
+```{r shock occurrence probabilities, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height = 10}
+countries <-c("Austria","Belgium","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Ireland","Italy","Latvia","Lithuania","Grand Duchy of Luxembourg","Malta","Netherlands","Poland","Portugal","Romania","Slovakia","Slovenia","Spain","Sweden")
+
+shocks_rta_prob <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == "shock_0.75",
+         regions == 120) %>% 
+  mutate(regions = "EU") %>% 
+  dplyr::select(-at_least_three_shocks, -at_least_one_shock, -time_window, -spans)
+
+shocks_rta_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+    filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == 0.75,
+         regions == 120) %>% 
+  mutate(regions = "EU") %>% 
+  dplyr::select(-at_least_three_shocks_down, -at_least_one_shock_up,
+                -at_least_one_shock_down, -time_window, -spans)
+
+shocks_prob <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == "shock_0.75",
+         regions %in% countries) %>% 
+  dplyr::select(-at_least_three_shocks, -at_least_one_shock, 
+                -spans, -time_window)
+
+shocks_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+    filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == 0.75,
+         regions %in% countries) %>% 
+  dplyr::select(-at_least_three_shocks_down, -at_least_one_shock_up,
+                -at_least_one_shock_down, -at_least_two_shocks_up,
+                -at_least_three_shocks_up, -spans, -time_window)
+
+shocks_prob <- rbind(shocks_prob, shocks_rta_prob)
+shocks_mec <- rbind(shocks_mec, shocks_rta_mec)
+shocks_prob <- left_join(shocks_prob, shocks_mec) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "prob")
+
+ggplot(shocks_prob, aes(x = regions, y = prob, fill = climates)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  facet_wrap(~type, ncol = 1) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = -45, hjust = 0)) +
+  geom_bar(data = shocks_prob[shocks_prob$regions=="EU",], aes(x = regions, y = prob, fill = climates), col = "red", stat = "identity", position = "dodge") +
+  geom_hline(data = shocks_prob[shocks_prob$regions=="EU",], aes(yintercept = prob), linetype = "dashed", col = "red")
+```
+
+## MERCOSUR country-to-RTA ratios
+
+MERCOSUR counts 4 current signatories (Argentina, Brazil, Uruguay, and Paraguay).
+
+### 1. Gradual change
+
+#### 1.a. Resource trends
+
+```{r resource trends MERCOSUR, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10}
+
+# load time-series data for the MERCOSUR RTA
+pct_diff_ts_rta_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_agriculture.csv") %>% 
+  dplyr::rename(regions = rtas)
+pct_diff_ts_rta_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_rta_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/rta_time-series_1985-2015_2070-2099_water_global.csv")
+ts_rta <- rbind(pct_diff_ts_rta_cs_ag, pct_diff_ts_rta_cs_fi, pct_diff_ts_rta_cs_wa) %>% 
+  mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/")) %>% 
+  filter(regions == 130,
+         experiment_climate == "ssp585",
+         !output_variable %in% c("tcb","ptotww","tws"))
+rm(pct_diff_ts_rta_cs_wa, pct_diff_ts_rta_cs_fi, pct_diff_ts_rta_cs_ag)
+
+ggplot(ts_rta, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_line(alpha= 0.8, col = "grey") +
+  geom_smooth(aes(group = eco_model), method = "loess", span = 0.75, col = "lightskyblue") +
+  geom_smooth(method = "loess", span = 0.75, col = "navyblue") +
+  facet_grid(climate_model ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("MERCOSUR resource trends")
+```
+
+```{r resource trends MERCOSUR countries, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=8}
+
+# load time-series data for countries
+pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+ts <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa) %>% 
+  mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/")) %>% 
+  filter(regions %in% c("Argentina","Brazil","Paraguay","Uruguay"),
+         experiment_climate == "ssp585",
+         !output_variable %in% c("tcb","ptotww","tws"))
+rm(pct_diff_ts_r_cs_wa, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_ag)
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_line(aes(group = eco_model, colour = climate_model), alpha= 0.5) +
+  scale_colour_manual(values = c("grey20","grey80")) +
+  geom_smooth(aes(colour = climate_model), method = "loess", span = 0.75) +
+  facet_grid(regions ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("MERCOSUR country resource trends")
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  #geom_line(aes(group = eco_model, colour = climate_model), alpha= 0.5) +
+  scale_colour_manual(values = c("grey20","grey80")) +
+  geom_smooth(aes(colour = climate_model), method = "loess", span = 0.75) +
+  facet_grid(regions ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("MERCOSUR country resource trends")
+```
+
+```{r compare RTA and countries M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=4}
+
+
+ggplot(ts, aes(x = years, y = percent_diff)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -25, ymax = 25, alpha = .4, fill = "grey") +
+  geom_smooth(aes(group = regions), method = "loess", span = 0.75, col = "grey40") +
+  geom_smooth(data = ts_rta, aes(x = years, y = percent_diff), col = "red") +
+  facet_grid(climate_model ~ output_variable, scales = "free") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("Country and RTA resource trends")
+```
+
+#### 1.b. Pseudo-probabilities
+
+```{r proportion of increase-decrease M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=10}
+
+ts_prop <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T))
+
+ts_rta_prop <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T)) %>% 
+  mutate(regions = "MERCOSUR")
+
+ts_prop <- rbind(ts_prop, ts_rta_prop)
+
+ggplot(ts_prop, aes(x = regions, y = prop)) + geom_bar(aes(fill = climate_model), stat = "identity",
+                                                       position = "dodge") +
+  scale_fill_manual(values = c("grey","grey30")) +
+  theme_bw() +
+  facet_wrap(~output_variable, ncol = 2) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) +
+  geom_bar(data = ts_prop[ts_prop$regions=="MERCOSUR",], aes(x = regions, y = prop, fill = climate_model),
+           stat = "identity",position="dodge",colour = "red") +
+  ggtitle("% of ecological models exceeding 25% difference")
+```
+
+```{r proportion of models with sign M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=10}
+ts_prop <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25, 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T))
+
+ts_rta_prop <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25, 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  mutate(regions = "MERCOSUR")
+
+ts_prop <- rbind(ts_prop, ts_rta_prop) %>% 
+  pivot_longer(5:7, names_to = "type", values_to = "prop")
+
+ggplot(ts_prop, aes(x = regions, y = prop, group = type)) + geom_bar(aes(fill = type), stat = "identity",
+                                                       position = "dodge") +
+  scale_fill_manual(values = c("grey30","darksalmon","darkseagreen")) +
+  theme_bw() +
+  facet_grid(output_variable~climate_model) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0),
+        legend.position = "bottom") +
+  geom_bar(data = ts_prop[ts_prop$regions=="MERCOSUR",], aes(x = regions, y = prop, fill = type, group = type),
+           stat = "identity",position="dodge",colour = "red") +
+  ggtitle("% of ecological models beyond 25% change, increase, or decrease")
+```
+
+#### 1.c. Probabilities
+
+```{r gradual probabilities MERCOSUR, echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=8}
+
+ts_prob <- ts %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0),
+         change_25_less = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_less)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, regions) %>% 
+  summarize(at_least_two_change_25 = get_at_least_two(6, prop),
+            at_least_two_25_down = get_at_least_two(6, prop_decrease),
+            at_least_one_25_down = get_at_least_one(6, prop_decrease),
+            at_least_one_25_up = get_at_least_one(6, prop_increase),
+            at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down) %>% 
+  pivot_longer(4:8, names_to = "type", values_to = "prob") %>% 
+  filter(type %in% c("at_least_two_change_25","at_least_two_25_down","at_least_one_25_up_down"))
+
+ts_rta_prob <- ts_rta %>% 
+  filter(years>2069,
+         years<2100) %>% 
+  group_by(eco_model, climate_model, experiment_climate, output_variable, regions) %>% 
+  summarize(percent_diff = mean(percent_diff, na.rm=T)) %>% 
+  group_by(climate_model, experiment_climate, output_variable, regions) %>% 
+  mutate(change_25 = NA,
+         change_25 = ifelse(percent_diff>25 | percent_diff<(-25), 1, 0),
+         change_25_plus = NA,
+         change_25_plus = ifelse(percent_diff>25 & output_variable!="qtot", 1, 0),
+         change_25_less = NA,
+         change_25_less = ifelse(percent_diff<(-25), 1, 0),
+         change_25_less = ifelse(percent_diff>25 & output_variable=="qtot", 1, change_25_less)) %>% 
+  summarize(prop = mean(change_25, na.rm=T),
+            prop_increase = mean(change_25_plus, na.rm=T),
+            prop_decrease = mean(change_25_less, na.rm=T)) %>% 
+  mutate(regions = "MERCOSUR") %>% 
+    group_by(climate_model, experiment_climate, regions) %>% 
+  summarize(at_least_two_change_25 = get_at_least_two(6, prop),
+            at_least_two_25_down = get_at_least_two(6, prop_decrease),
+            at_least_one_25_down = get_at_least_one(6, prop_decrease),
+            at_least_one_25_up = get_at_least_one(6, prop_increase),
+            at_least_one_25_up_down = at_least_one_25_up*at_least_one_25_down) %>% 
+    pivot_longer(4:8, names_to = "type", values_to = "prob") %>% 
+  filter(type %in% c("at_least_two_change_25","at_least_two_25_down","at_least_one_25_up_down"))
+
+ts_prob <- rbind(ts_prob, ts_rta_prob)
+  
+ggplot(ts_prob, aes(x = regions, y = prob)) +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = climate_model)) +
+  scale_fill_manual(values = c("grey","grey30")) +
+  theme_bw() +
+  facet_wrap(~type, ncol =1) +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0),
+        legend.position = "bottom") +
+    geom_bar(data = ts_prob[ts_prob$regions=="MERCOSUR",], aes(x = regions, y = prob, fill = climate_model),
+           stat = "identity",position="dodge",colour = "red") +
+  geom_hline(data = ts_prob[ts_prob$regions=="MERCOSUR",], aes(yintercept = prob), col = "red",
+             linetype = "dashed")
+
+```
+
+### 2. Shocks
+
+#### 2.a. Shock pseudo-probability time-series
+
+```{r rta shock occurrence M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=3}
+
+shocks_rta <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions == 130) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -shock_up,
+                -shock_down, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2))
+
+ggplot(shocks_rta, aes(x = years, y = shock)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  facet_grid(climate_model ~ output_variable) +
+  ggtitle("MERCOSUR shock occurrence through time") +
+  ylab("prop of models detecting a shock")
+```
+
+```{r rta shock occurrence w. sign M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+shocks_rta <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions == 130) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2),
+            shock_up = round(mean(shock_up, na.rm=T),2),
+            shock_down = round(mean(shock_down, na.rm=T),2)) %>% 
+  pivot_longer(5:7, names_to = "type", values_to = "prop")
+
+ggplot(shocks_rta, aes(x = years, y = prop, col = type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_color_manual(values = c("grey30","darksalmon","darkseagreen")) +
+  theme_bw() +
+  facet_grid(output_variable ~ climate_model) +
+  ggtitle("MERCOSUR shock occurrence through time") +
+  ylab("prop of models detecting a shock") +
+  theme(legend.position = "bottom")
+```
+
+```{r cnt shock occurrence M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+shocks <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015.csv") %>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww"),
+         experiment_climate == "ssp585",
+         regions %in% c("Argentina","Brazil","Paraguay","Uruguay")) %>% 
+  dplyr::select(-id, -percent_diff, -experiment_climate, -shock_up,
+                -shock_down, -res, -spatial_scale, -sector) %>%
+  group_by(regions, climate_model, years, output_variable) %>% 
+  summarize(shock = round(mean(shock, na.rm=T),2))
+    
+  
+ggplot(shocks, aes(x = years, y = shock, color = climate_model)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  scale_color_manual(values = c("grey20","grey80")) +
+  facet_grid(regions ~ output_variable) +
+  ggtitle("MERCOSUR country shock occurrence through time") +
+  ylab("prop of models detecting a shock") +
+  theme(legend.position = "none")
+
+```
+
+#### 2.b. Probabilities
+
+```{r shock occurrence probabilities M, echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height = 8}
+countries <-c("Argentina","Brazil","Paraguay","Uruguay")
+
+shocks_rta_prob <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == "shock_0.75",
+         regions == 130) %>% 
+  mutate(regions = "MERCOSUR") %>% 
+  dplyr::select(-at_least_three_shocks, -at_least_one_shock, -time_window, -spans)
+
+shocks_rta_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/rta_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+    filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == 0.75,
+         regions == 130) %>% 
+  mutate(regions = "MERCOSUR") %>% 
+  dplyr::select(-at_least_three_shocks_down, -at_least_one_shock_up,
+                -at_least_one_shock_down, -time_window, -spans)
+
+shocks_prob <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == "shock_0.75",
+         regions %in% countries) %>% 
+  dplyr::select(-at_least_three_shocks, -at_least_one_shock, 
+                -spans, -time_window)
+
+shocks_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+    filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         spans == 0.75,
+         regions %in% countries) %>% 
+  dplyr::select(-at_least_three_shocks_down, -at_least_one_shock_up,
+                -at_least_one_shock_down, -at_least_two_shocks_up,
+                -at_least_three_shocks_up, -spans, -time_window)
+
+shocks_prob <- rbind(shocks_prob, shocks_rta_prob)
+shocks_mec <- rbind(shocks_mec, shocks_rta_mec)
+shocks_prob <- left_join(shocks_prob, shocks_mec) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "prob")
+
+ggplot(shocks_prob, aes(x = regions, y = prob, fill = climates)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_bw() +
+  facet_wrap(~type, ncol = 1) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = -45, hjust = 0)) +
+  geom_bar(data = shocks_prob[shocks_prob$regions=="MERCOSUR",], aes(x = regions, y = prob, fill = climates), col = "red", stat = "identity", position = "dodge") +
+  geom_hline(data = shocks_prob[shocks_prob$regions=="MERCOSUR",], aes(yintercept = prob), linetype = "dashed", col = "red")
+```
+
+## EU & MERCOSUR country-to-RTA ratios
