@@ -28,8 +28,11 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 0.  data_processing: merging historical and future simulations, homogenize spatial and temporal resolutions, data aggregation from grid cells to global and country scales, time-series of relative resource change
 1.  cross-sector_long-term: calculate % difference resource change and probabilities of long-term change
 2.  cross-sector_shocks: identify resource shocks and calculate probabilities of short-term change
+3.  figure_x.R: code to reproduce figures and related supplementary figures
 
 ## Final data products
+
+Will be archived on Zenodo
 
 ## Contributions
 
