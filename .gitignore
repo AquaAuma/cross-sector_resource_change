@@ -4,3 +4,7 @@
 .Ruserdata
 
 data/crop_areas/*
+data/data_processing/*
+data/short-term_change/*
+data/long-term_change/*
+data/ecological_data/*
