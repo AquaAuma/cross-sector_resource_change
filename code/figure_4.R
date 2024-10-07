@@ -1,5 +1,5 @@
 #### Figure 4 and alternative versions
-#### Coding: Aurore A. Maureaud, August 2024
+#### Coding: Aurore A. Maureaud, September 2024
 
 rm(list = ls())
 
@@ -273,90 +273,8 @@ ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)
 dev.off()
 
 
-#### F. Figure 4 compensation SSP585 SI----
-dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "spatial_scale")) %>% 
-  dplyr::select(regions, climates, spatial_scale,
-                at_least_two_25_down, at_least_two_shocks_down) %>%
-  pivot_longer(4:5, names_to = "type", values_to = "proba") %>% 
-  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "abrupt", "gradual"),
-         mechanism = ifelse(str_detect(type, "down")==TRUE, "synchrony", "stability"),
-         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism))
 
-# make matrix of country versus RTA
-dat_rta <- read_csv("data/RTA WHO/RTA_filtered.csv")
-
-dat_rta_list <- data.frame()
-for(i in 1:nrow(dat_rta)){
-  signatories <- strsplit(dat_rta$signatories[i],"; ")[[1]]
-  xx <- dat_rta[i,]
-  xx[1:length(signatories),] <- dat_rta[i,]
-  xx$signatories <- signatories
-  
-  if(i == 1){dat_rta_list <- xx
-  } else {dat_rta_list <- rbind(dat_rta_list, xx)}
-  
-  rm(xx, signatories)
-}
-
-match_with_rta <- read_csv("data/match_regions/match_regions_eez_rta_reconciled.csv") %>% 
-  dplyr::select(SOVEREIGN1, signatories) %>% 
-  filter(SOVEREIGN1 != "Republic of Mauritius") %>% 
-  distinct()
-
-dat_rta_list <- left_join(dat_rta_list, match_with_rta, by = "signatories") %>% 
-  dplyr::select(rta_id, SOVEREIGN1)
-
-dat_ecology_rta <- dat_ecology_rta %>% 
-  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
-  group_by(scale, spatial_scale, regions) %>% 
-  summarize(proba = median(proba, na.rm=T)) %>% 
-  filter(spatial_scale!="global")
-
-dat_ecology_cnt <- dat_ecology_rta %>% 
-  filter(spatial_scale == "regions")
-dat_ecology_rta <- dat_ecology_rta %>% 
-  filter(spatial_scale == "rta")
-
-dat_matrix <- left_join(dat_rta_list, dat_ecology_cnt, by = c("SOVEREIGN1" = "regions"),
-                        relationship = "many-to-many") %>% 
-  mutate(rta_id = as.character(rta_id))
-dat_matrix <- left_join(dat_matrix, dat_ecology_rta, by = c("rta_id" = "regions","scale")) %>% 
-  mutate(proba_ratio = proba.x/proba.y)
-
-# figure
-dat_rta$rta_id <- as.character(dat_rta$rta_id)
-dat_fig4 <- dat_matrix %>% 
-  left_join(dat_rta, "rta_id") %>% 
-  filter(!is.na(scale)) %>% 
-  mutate(region = ifelse(str_detect(region, ";")==TRUE, "Cross-regional",region),
-         region = ifelse(region == "Commonwealth of Independent States (CIS), including certain associate and former member States", "Cross-regional", region)) %>% 
-  mutate(proba_ratio = ifelse(proba_ratio>2, 2, proba_ratio)) %>% 
-  arrange(region)
-
-png(paste0("figures/manuscript_figures/figure_4_compensation_si.png"),
-    width = 12*200, height = 12*200, res = 200)
-ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)))) +
-  geom_boxplot(linetype = 2, lwd = 0.15, fill = "grey95") +
-  geom_point(alpha = 0.5, size = 2) +
-  geom_point(data = dat_fig4[dat_fig4$SOVEREIGN1 %in% c("United Kingdom","United States","Russia","China","Australia","Norway","Sweden","Spain"),], 
-             aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)),
-                 fill = SOVEREIGN1), shape = 21, size = 2, alpha = 0.8) +
-  theme_bw() +
-  facet_grid(region ~ scale, scale="free_y", space = "free_y") +
-  theme(axis.text.x = element_text(angle = 45, hjust=1),
-        strip.text.y = element_text(angle = 0),
-        panel.spacing = unit(0,'lines'),
-        legend.position = "bottom",
-        text = element_text(size = 18)) +
-  xlab("Plurilateral RTAs") + ylab("Exposure ratio") +
-  geom_hline(aes(yintercept=1), linetype = "dashed") +
-  coord_flip() + ylim(0,2) +
-  guides(fill=guide_legend(title="")) +
-  scale_fill_manual(values = c("coral","darkred","blue","cornflowerblue","darkgoldenrod1","purple","plum","darkorange"))
-dev.off()
-
-
-#### G. Maps of RTA and national exposure metrics for SSP 585 ----
+#### F. Maps of RTA and national exposure metrics for SSP 585 ----
 dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "spatial_scale")) %>% 
   dplyr::select(regions, climates, spatial_scale,
                 at_least_two_change_25, at_least_two_shocks,
@@ -495,6 +413,13 @@ cnts <- dat_fig4 %>%
   group_by(SOVEREIGN1, rta_acronym) %>% 
   summarize(beneficial = length(beneficial)) %>% 
   filter(beneficial==2)
+
+dat_fig4 %>% 
+  group_by(SOVEREIGN1, rta_acronym, scale) %>% 
+  summarize(beneficial = ifelse(proba_ratio>1, "beneficial", "NA")) %>% 
+  filter(beneficial=="beneficial") %>% 
+  group_by(scale) %>% 
+  summarize(beneficial = length(SOVEREIGN1))
 
 gstp <- dat_fig4 %>%
   filter(rta_acronym == "GSTP")

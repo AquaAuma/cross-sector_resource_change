@@ -305,3 +305,53 @@ cor(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 5.85"],
 cor.test(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 5.85"],
          dat_points$at_least_two_change_25[dat_points$ssp=="SSP 5.85"],
          method = "pearson")
+
+#### E. Figure 1 with range of metrics ----
+# data with average of climate models
+dat_points <- dat %>% 
+  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
+         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
+         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
+         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
+  group_by(regions, ssp) %>% 
+  summarize(at_least_two_shocks = mean(at_least_two_shocks, na.rm=T),
+            at_least_two_change_25 = mean(at_least_two_change_25, na.rm=T))
+
+View(dat_points %>% 
+  group_by(ssp) %>% 
+  summarize(min(at_least_two_change_25),min(at_least_two_shocks),
+            max(at_least_two_change_25),max(at_least_two_shocks),
+            median(at_least_two_change_25),median(at_least_two_shocks)))
+
+View(dat_points %>% 
+  filter(ssp == "SSP 5.85"))
+  
+# near certainty shocks
+dat_points %>% 
+  filter(ssp == "SSP 5.85",
+         at_least_two_shocks>0.9) %>% 
+  pull(regions)
+
+# near safety shocks
+dat_points %>% 
+  filter(ssp == "SSP 5.85",
+         at_least_two_shocks<0.1) %>% 
+  pull(regions)
+
+# near certainty gradual
+dat_points %>% 
+  filter(ssp == "SSP 5.85",
+         at_least_two_change_25>0.9) %>% 
+  pull(regions)
+
+# near safety gradual
+dat_points %>% 
+  filter(ssp == "SSP 5.85",
+         at_least_two_change_25<0.1) %>% 
+  pull(regions)
+  
+# 0.75 for both
+dat_points %>% 
+  filter(ssp == "SSP 5.85",
+         at_least_two_shocks>0.75 & at_least_two_change_25>0.75) %>% 
+  pull(regions)

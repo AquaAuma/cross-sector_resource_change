@@ -244,6 +244,13 @@ dev.off()
 
 
 #### F. Summary statistics for the results description ----
+View(dat_ecology %>% 
+  filter(!regions %in% c("Antarctica","global"),
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, regions) %>% 
+  summarize(overall = median(proba, na.rm=T)) %>% 
+  pivot_wider(names_from = scale, values_from = overall))
+
 dat_ecology %>% 
   filter(!regions %in% c("Antarctica","global"),
          climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
@@ -313,7 +320,8 @@ dat_ecology %>%
   arrange(regions) %>% 
   filter(regions %in% c("Russia","United States","France","Spain",
                         "China","Ukraine","Madagascar","Sweden",
-                        "Ecuador","Kuwait"))
+                        "Ecuador","Kuwait","Ethiopia","Egypt","Pakistan",
+                        "Democratic Republic of the Congo","Peru"))
 
 dat_ecology %>% 
   filter(!regions %in% c("Antarctica","global"),
