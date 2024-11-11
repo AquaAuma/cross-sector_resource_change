@@ -1,0 +1,314 @@
+---
+title: "Sensitivity of metrics to number of resources per aggregation unit"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+rm(list = ls())
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(sf)
+sf_use_s2(FALSE)
+library(colorspace)
+library(ggpubr)
+
+# eez-land merge shapefile
+regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
+  dplyr::select(UNION, SOVEREIGN1)
+```
+
+Supplementary analysis comparing the metrics of interest in the paper against the number of resources present in each aggregation unit and for both aggregation levels (countries and regional trade agreements).
+
+## Number of resources per country
+
+Computing the number of resources modeled by country across the three sectors considered. Resources can vary from 1 to 6.
+
+```{r nres per country, echo=FALSE, warning=FALSE, message=FALSE}
+
+# load time-series data
+pct_diff_ts_r_cs_ag <- read_csv("data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+pct_diff_ts_r_cs <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa)
+
+nres_r <- data.frame(pct_diff_ts_r_cs) %>% 
+  filter(!is.na(percent_diff),
+         output_variable %in% c("rice", "wheat", "soybean", "maize", "tcblog10", "qtot")) %>% 
+  group_by(regions) %>% 
+  summarize(n_res = length(unique(output_variable)))
+
+nres_r_map <- left_join(regions, nres_r, by = c("SOVEREIGN1" = "regions")) 
+
+nres_r_map %>% 
+  ggplot() + geom_sf(aes(fill = n_res)) +
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "Grays", limits = c(1,6)) +
+  theme(legend.position = "bottom")
+```
+
+How are the metrics of interest influences by the number of resources per country?
+
+```{r sensi country, echo=FALSE, warning=FALSE, message=FALSE}
+
+shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(-spans, -at_least_three_shocks_up, -at_least_two_shocks_up)
+change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(-spans) %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec)
+long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
+
+# countries
+shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans)
+change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+  dplyr::select(-spatial_scale)
+
+# global
+shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans.csv") %>% 
+  mutate(regions = "global") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans) %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
+long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
+
+dat_mec <- left_join(dat_mec, dat, by = c("regions","climates","time_window"))
+
+# ssp5.85
+dat_mec_ssp585 <- dat_mec %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_one_25_up_down = mean(at_least_one_25_up_down, na.rm=T),
+            at_least_two_25_down = mean(at_least_two_25_down, na.rm=T),
+            at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
+            at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T),
+            at_least_two_change_25 = mean(at_least_two_change_25, na.rm = T),
+            at_least_two_shocks = mean(at_least_two_shocks, na.rm = T))
+
+nres_r_metrics <- left_join(nres_r, dat_mec_ssp585) %>% 
+    rename(`Gradual compensation` = at_least_one_25_up_down,
+         `Gradual synchrony` = at_least_two_25_down,
+         `Abrupt compensation` = at_least_one_shock_up_down,
+         `Abrupt synchrony` = at_least_two_shocks_down,
+         `Gradual change` = at_least_two_change_25,
+         `Abrupt change` = at_least_two_shocks) %>% 
+    pivot_longer(3:8, names_to = "metric", values_to = "value")
+
+ggplot(nres_r_metrics) +
+  geom_boxplot(aes(x = as.factor(n_res), y = value)) +
+  facet_wrap(~ factor(metric, 
+                      levels = c("Gradual change","Abrupt change",
+                                 "Gradual compensation","Abrupt compensation",
+                                 "Gradual synchrony","Abrupt synchrony")),
+             nrow = 3) +
+  theme_bw() +
+  xlab("Number of resources")
+```
+
+## Number of resources per regional trade agreement
+
+```{r nres per rta, echo=FALSE, warning=FALSE, message=FALSE}
+
+                # load time-series data
+                pct_diff_ts_rta_cs_ag <- read_csv("data/data_processing/rta_time-series_1985-2015_2070-2099_agriculture.csv") %>% 
+                  dplyr::rename(regions = rtas)
+                pct_diff_ts_rta_cs_fi <- read_csv("data/data_processing/rta_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+                pct_diff_ts_rta_cs_wa <- read_csv("data/data_processing/rta_time-series_1985-2015_2070-2099_water_global.csv")
+                pct_diff_ts_rta_cs <- rbind(pct_diff_ts_rta_cs_ag, pct_diff_ts_rta_cs_fi, pct_diff_ts_rta_cs_wa)
+
+                nres_rta <- pct_diff_ts_rta_cs %>% 
+                  filter(!is.na(percent_diff),output_variable %in% c("rice", "wheat", "soybean", "maize", "tcblog10", "qtot")) %>% 
+                  group_by(regions) %>% 
+                  summarize(n_res = length(unique(output_variable)))
+
+                #### A. load data for short- and long-term changes ----
+                # countries
+                shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+                  mutate(spatial_scale = "regions") %>% 
+                  filter(spans == "shock_0.75") %>% 
+                  dplyr::select(-spans)
+                change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+                  filter(time_window == 30)
+
+                # global
+                shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans.csv") %>% 
+                  mutate(regions = "global",
+                         spatial_scale = "global") %>% 
+                  filter(spans == "shock_0.75") %>% 
+                  dplyr::select(names(shock_probas_r_cs))
+                change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas.csv") %>% 
+                  mutate(regions = "global",
+                         spatial_scale = "global") %>% 
+                  filter(time_window == 30) %>% 
+                  dplyr::select(names(change_probas_r_cs))
+
+                # rtas
+                shock_probas_rta_cs <- read_csv("data/short-term_change/rta_shocks_1985-2015_probas_spans.csv") %>% 
+                  mutate(spatial_scale = "rta") %>% 
+                  filter(spans == "shock_0.75") %>% 
+                  dplyr::select(names(shock_probas_r_cs))
+                change_probas_rta_cs <- read_csv("data/long-term_change/rta_long-term_change_1985-2015_probas.csv") %>% 
+                  filter(time_window == 30) %>% 
+                  dplyr::select(names(change_probas_r_cs))
+
+                # rbind
+                shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs, shock_probas_rta_cs)
+                long_term <- rbind(change_probas_g_cs, change_probas_r_cs, change_probas_rta_cs) %>% 
+                  pivot_wider(names_from = "type", values_from = "probas")
+                dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "spatial_scale")) %>% 
+                  filter(regions != "Antarctica")
+
+                #### B. load data for compensatory and synchronous mechanisms ----
+                # countries
+                shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+                  mutate(spatial_scale = "regions") %>% 
+                  filter(spans == "0.75") %>% 
+                  dplyr::select(-spans, -at_least_two_shocks_up, -at_least_three_shocks_up)
+                change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+                  filter(time_window == 30) %>% 
+                  dplyr::select(-time_window)
+
+                # global
+                shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+                  mutate(regions = "global",
+                         spatial_scale = "global") %>% 
+                  filter(spans == "0.75") %>% 
+                  dplyr::select(names(shock_probas_r_cs_mec))
+                change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+                  mutate(regions = "global",
+                         saptial_scale = "global") %>% 
+                  filter(time_window == 30) %>% 
+                  dplyr::select(names(change_probas_r_cs_mec))
+
+                # rta
+                shock_probas_rta_cs_mec <- read_csv("data/short-term_change/rta_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+                  mutate(spatial_scale = "rta") %>% 
+                  filter(spans == "0.75") %>% 
+                  dplyr::select(names(shock_probas_r_cs_mec))
+                change_probas_rta_cs_mec <- read_csv("data/long-term_change/rta_long-term_change_1985-2015_probas_mechanisms.csv")  %>% 
+                  filter(time_window == 30) %>% 
+                  dplyr::select(names(change_probas_r_cs_mec))
+
+                # rbind
+                shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec, shock_probas_rta_cs_mec)
+                long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec, change_probas_rta_cs_mec) %>% 
+                  pivot_wider(names_from = "type", values_from = "probas")
+                dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "spatial_scale")) %>% 
+                  filter(regions != "Antarctica")
+
+
+                #### C. Data across metrics ----
+                # cbind both datasets
+                dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "spatial_scale")) %>% 
+                  dplyr::select(regions, climates, spatial_scale,
+                                at_least_two_change_25, at_least_two_shocks,
+                                at_least_two_25_down, at_least_one_25_up_down,
+                                at_least_two_shocks_down, at_least_one_shock_up_down) %>%
+                  mutate(at_least_one_25_up_down = 1-at_least_one_25_up_down,
+                         at_least_one_shock_up_down = 1-at_least_one_shock_up_down) %>%
+                  pivot_longer(4:9, names_to = "type", values_to = "proba") %>% 
+                  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "abrupt", "gradual"),
+                         mechanism = ifelse(str_detect(type, "down")==TRUE, "synchrony", "stability"),
+                         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism)) %>% 
+                  filter(spatial_scale == "rta",
+                         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+                  group_by(regions, spatial_scale, type, scale, mechanism) %>% 
+                  summarize(proba = mean(proba, na.rm=T))
+                dat_ecology_rta$regions <- as.numeric(as.vector(dat_ecology_rta$regions))
+
+nres_rta_metrics <- left_join(nres_rta, dat_ecology_rta) %>% 
+  mutate(mechanism = ifelse(mechanism == "stability","change",mechanism),
+         type = paste(scale, mechanism, sep = " "))
+
+ggplot(nres_rta_metrics) +
+  geom_boxplot(aes(x = as.factor(n_res), y = proba)) +
+  facet_wrap(~ factor(type,
+             levels = c("gradual change","abrupt change",
+                        "gradual compensation","abrupt compensation",
+                        "gradual synchrony","abrupt synchrony")),
+             nrow = 3) +
+  theme_bw() +
+  xlab("Number of resources")
+```
+
+## Make summary figure
+
+```{r summary figure, fig.width=10, fig.height=12}
+
+map <- nres_r_map %>% 
+  ggplot() + geom_sf(aes(fill = n_res)) +
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "Grays", limits = c(1,6))
+
+box_cnt <- ggplot(nres_r_metrics) +
+  geom_boxplot(aes(x = as.factor(n_res), y = value)) +
+  facet_wrap(~ factor(metric, 
+                      levels = c("Gradual change","Abrupt change",
+                                 "Gradual compensation","Abrupt compensation",
+                                 "Gradual synchrony","Abrupt synchrony")),
+             nrow = 3) +
+  theme_bw() +
+  xlab("Number of resources") +
+  ylab("Probability")
+
+box_rta <- ggplot(nres_rta_metrics) +
+  geom_boxplot(aes(x = as.factor(n_res), y = proba)) +
+  facet_wrap(~ factor(type,
+             levels = c("gradual change","abrupt change",
+                        "gradual compensation","abrupt compensation",
+                        "gradual synchrony","abrupt synchrony")),
+             nrow = 3) +
+  theme_bw() +
+  xlab("Number of resources") +
+  ylab("Probability")
+
+ggarrange(map, 
+          ggarrange(box_cnt, box_rta, ncol = 2,
+                    labels = c("CNT","RTA")),
+          nrow = 2, labels = "Number of resources",
+          heights = c(1,2), widths = c(1,1))
+```
+
+## 
