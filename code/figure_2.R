@@ -1,5 +1,5 @@
 #### Figure 2 and alternative versions
-#### Coding: Aurore A. Maureaud, August 2024
+#### Coding: Aurore A. Maureaud, November 2024
 
 rm(list = ls())
 
@@ -101,16 +101,16 @@ png(paste0("figures/manuscript_figures/figure_2.png"),
 regions_dat %>% 
   rename(`Gradual compensation` = at_least_one_25_up_down,
          `Gradual synchrony` = at_least_two_25_down,
-         `Abrupt compensation` = at_least_one_shock_up_down,
-         `Abrupt synchrony` = at_least_two_shocks_down,
+         `Shock compensation` = at_least_one_shock_up_down,
+         `Shock synchrony` = at_least_two_shocks_down,
          `Gradual change` = at_least_two_change_25,
-         `Abrupt change` = at_least_two_shocks) %>% 
+         `Shocks` = at_least_two_shocks) %>% 
   pivot_longer(3:8, names_to = "mechanism", values_to = "probability") %>% 
   ggplot() + geom_sf(aes(fill = probability)) +
   facet_wrap(~ factor(mechanism, 
-                      levels = c("Gradual change","Abrupt change",
-                                 "Gradual compensation","Abrupt compensation",
-                                 "Gradual synchrony","Abrupt synchrony"))
+                      levels = c("Gradual change","Shocks",
+                                 "Gradual synchrony","Shock synchrony",
+                                 "Gradual compensation","Shock compensation"))
              , ncol = 2) + 
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
@@ -177,16 +177,16 @@ png(paste0("figures/manuscript_figures/figure_2_ssp126_si.png"),
 regions_dat %>% 
   rename(`Gradual compensation` = at_least_one_25_up_down,
          `Gradual synchrony` = at_least_two_25_down,
-         `Abrupt compensation` = at_least_one_shock_up_down,
-         `Abrupt synchrony` = at_least_two_shocks_down,
+         `Shock compensation` = at_least_one_shock_up_down,
+         `Shock synchrony` = at_least_two_shocks_down,
          `Gradual change` = at_least_two_change_25,
-         `Abrupt change` = at_least_two_shocks) %>% 
+         `Shocks` = at_least_two_shocks) %>% 
   pivot_longer(3:8, names_to = "mechanism", values_to = "probability") %>% 
   ggplot() + geom_sf(aes(fill = probability)) +
   facet_wrap(~ factor(mechanism, 
-                      levels = c("Gradual change","Abrupt change",
-                                 "Gradual compensation","Abrupt compensation",
-                                 "Gradual synchrony","Abrupt synchrony"))
+                      levels = c("Gradual change","Shocks",
+                                 "Gradual synchrony","Shock synchrony",
+                                 "Gradual compensation","Shock compensation"))
              , ncol = 2) + 
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +

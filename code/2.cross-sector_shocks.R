@@ -377,7 +377,6 @@ write.csv(shock_proba_r_cs, file = "data/short-term_change/countries_shocks_1985
 # the specific resource, I get resources out from calculations
 
 
-
 # C. get probabilities of synchrony across models, sectors and time ----
 xx <- read_csv("data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%

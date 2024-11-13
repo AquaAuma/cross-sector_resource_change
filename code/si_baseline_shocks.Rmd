@@ -1,0 +1,173 @@
+---
+title: "Baseline shock probabilities"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+rm(list = ls())
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(sf)
+library(colorspace)
+library(ggpubr)
+
+# load functions
+source("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/functions/get_probas.R")
+
+# load future shock probabilities
+f_shocks <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  dplyr::select(regions, climates, spans, at_least_two_shocks) %>% 
+  rename(pshocks_f = at_least_two_shocks)
+
+# calculate past shock probabilities
+xx <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
+  filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
+  mutate(climates = paste(climate_model, experiment_climate)) %>%
+  group_by(regions, climates, years, output_variable) %>% 
+  summarize(shock_0.75 = round(mean(shock_0.75, na.rm=T),4),
+            shock_0.75_down = round(mean(shock_0.75_down, na.rm=T),4),
+            shock_0.75_up = round(mean(shock_0.75_up, na.rm=T),4),
+            shock_0.5 = round(mean(shock_0.5, na.rm=T),4),
+            shock_0.5_down = round(mean(shock_0.5_down, na.rm=T),4),
+            shock_0.5_up = round(mean(shock_0.5_up, na.rm=T),4),
+            shock_0.25 = round(mean(shock_0.25, na.rm=T),4),
+            shock_0.25_down = round(mean(shock_0.25_down, na.rm=T),4),
+            shock_0.25_up = round(mean(shock_0.25_up, na.rm=T),4)) %>% 
+  dplyr::select(regions, climates, years, output_variable, shock_0.75, shock_0.5, shock_0.25) %>% 
+  pivot_longer(5:7, names_to = "spans", values_to = "shock") %>% 
+  pivot_wider(names_from = output_variable, values_from = "shock") %>% 
+  data.frame() 
+
+spans <- c("0.25","0.5","0.75")
+shock_proba_r_cs <- data.frame()
+for(s in 1:length(spans)){
+  
+  span <- spans[s]
+  yy <- xx %>% 
+    filter(years>1984,
+           years<2016,
+           str_detect(spans, span)==TRUE)
+  
+  yy$at_least_one_shock <- yy$at_least_two_shocks <- yy$at_least_three_shocks <- NA
+  yy$at_least_one_shock <- apply(yy[,5:10], 1, function(x) get_at_least_one(6,x))
+  yy$at_least_two_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_two(6,x))
+  yy$at_least_three_shocks <- apply(yy[,5:10], 1, function(x) get_at_least_three(6,x))
+  
+  yy <- yy %>% 
+    dplyr::select(regions, climates, years, spans, at_least_one_shock, at_least_two_shocks, at_least_three_shocks) %>% 
+    group_by(regions, climates, spans) %>% 
+    summarize(at_least_one_shock = get_at_least_one(30,at_least_one_shock),
+              at_least_two_shocks = get_at_least_one(30, at_least_two_shocks),
+              at_least_three_shocks = get_at_least_one(30, at_least_three_shocks),
+              time_window = 30)
+  
+  if(s==1){shock_proba_r_cs <- yy
+  } else {shock_proba_r_cs <- rbind(shock_proba_r_cs,yy)}
+  rm(yy)
+}
+
+p_shocks <- shock_proba_r_cs %>% 
+  dplyr::select(regions, climates, spans, at_least_two_shocks) %>% 
+  rename(pshocks_p = at_least_two_shocks)
+
+# join the past and future shock probabilities
+shocks <- left_join(f_shocks, p_shocks, by = c("regions","climates","spans")) %>% 
+  filter(spans == "shock_0.75",
+         climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(regions) %>% 
+  summarize (pshocks_f = median(pshocks_f, na.rm=T),
+             pshocks_p = median(pshocks_p, na.rm=T))
+
+rm(span, spans, s, xx)
+
+# load regions shapefile
+regions <- st_read("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
+  dplyr::select(UNION, SOVEREIGN1)
+
+# join the shapefile and data
+shocks_map <- left_join(regions, shocks, by = c("SOVEREIGN1" = "regions"))
+```
+
+Mapping out the probability of at least two shocks across 2070-2099 for the SSP 5.85 climate scenario:
+
+```{r map future shock proba, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height = 5}
+ggplot(shocks_map) + geom_sf(aes(fill = pshocks_f)) +
+  scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
+    theme_bw() +
+    theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.25,'lines'))
+```
+
+Mapping out the probability of at least two shocks across 1985-2015:
+
+```{r map past shock proba, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height = 5}
+ggplot(shocks_map) + geom_sf(aes(fill = pshocks_p)) +
+  scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
+    theme_bw() +
+    theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.25,'lines'))
+```
+
+Relationship between past and future shock probability under SSP 5.85:
+
+```{r relationship past-future per country, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(shocks, aes(x = pshocks_p, y = pshocks_f)) + geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  theme_bw() +
+  xlab("Probability 2 shocks+ 1985-2015") +
+  ylab("Probability 2 shocks+ 2070-2100") +
+  geom_abline(intercept = 0, slope = 1, lwd=1, linetype = "dashed",
+              col = "red")
+```
+
+*The dark line and shaded gray area show a linear model fit, and the dotted red line shows the 1-to-1 line.*
+
+Mapping out the probability of at least two shocks across 2070-2100 for SSP 1.26:
+
+```{r map ssp126, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height = 5}
+p_shocks <- shock_proba_r_cs %>% 
+  dplyr::select(regions, climates, spans, at_least_two_shocks) %>% 
+  rename(pshocks_p = at_least_two_shocks)
+
+# join the past and future shock probabilities
+shocks <- left_join(f_shocks, p_shocks, by = c("regions","climates","spans")) %>% 
+  filter(spans == "shock_0.75",
+         climates %in% c("gfdl-esm4 ssp126","ipsl-cm6a-lr ssp126")) %>%
+  group_by(regions) %>% 
+  summarize (pshocks_f = median(pshocks_f, na.rm=T),
+             pshocks_p = median(pshocks_p, na.rm=T))
+
+ggplot(shocks_map) + geom_sf(aes(fill = pshocks_p)) +
+  scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
+    theme_bw() +
+    theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.25,'lines'))
+```
+
+Relationship between past and future shock probabilities under SSP 1.26:

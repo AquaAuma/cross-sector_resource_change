@@ -1,5 +1,5 @@
 #### Figure 4 and alternative versions
-#### Coding: Aurore A. Maureaud, September 2024
+#### Coding: Aurore A. Maureaud, November 2024
 
 rm(list = ls())
 
@@ -446,3 +446,283 @@ sapta <- dat_fig4 %>%
 eac <- dat_fig4 %>% 
   filter(rta_acronym == "EAC",
          scale == "abrupt")
+
+
+################################################################################
+#### 4bis. Exposure for country versus trade blocs based on synchrony only
+################################################################################
+
+#### A. load data for short- and long-term changes ----
+# countries
+shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  mutate(spatial_scale = "regions") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans)
+change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+  filter(time_window == 30)
+
+# global
+shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans.csv") %>% 
+  mutate(regions = "global",
+         spatial_scale = "global") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas.csv") %>% 
+  mutate(regions = "global",
+         spatial_scale = "global") %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(names(change_probas_r_cs))
+
+# rtas
+shock_probas_rta_cs <- read_csv("data/short-term_change/rta_shocks_1985-2015_probas_spans.csv") %>% 
+  mutate(spatial_scale = "rta") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_rta_cs <- read_csv("data/long-term_change/rta_long-term_change_1985-2015_probas.csv") %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(names(change_probas_r_cs))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs, shock_probas_rta_cs)
+long_term <- rbind(change_probas_g_cs, change_probas_r_cs, change_probas_rta_cs) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "spatial_scale")) %>% 
+  filter(regions != "Antarctica")
+
+#### B. load data for compensatory and synchronous mechanisms ----
+# countries
+shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  mutate(spatial_scale = "regions") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(-spans, -at_least_two_shocks_up, -at_least_three_shocks_up)
+change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(-time_window)
+
+# global
+shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  mutate(regions = "global",
+         spatial_scale = "global") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  mutate(regions = "global",
+         saptial_scale = "global") %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
+
+# rta
+shock_probas_rta_cs_mec <- read_csv("data/short-term_change/rta_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  mutate(spatial_scale = "rta") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_rta_cs_mec <- read_csv("data/long-term_change/rta_long-term_change_1985-2015_probas_mechanisms.csv")  %>% 
+  filter(time_window == 30) %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
+
+# rbind
+shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec, shock_probas_rta_cs_mec)
+long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec, change_probas_rta_cs_mec) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "spatial_scale")) %>% 
+  filter(regions != "Antarctica")
+
+
+#### C. Data across metrics ----
+# cbind both datasets
+dat_ecology_rta_synchrony <- left_join(dat, dat_mec, by = c("regions", "climates", "spatial_scale")) %>% 
+  dplyr::select(regions, climates, spatial_scale,
+                at_least_two_change_25, at_least_two_shocks,
+                at_least_two_25_down, at_least_one_25_up_down,
+                at_least_two_shocks_down, at_least_one_shock_up_down) %>%
+  mutate(at_least_one_25_up_down = 1-at_least_one_25_up_down,
+         at_least_one_shock_up_down = 1-at_least_one_shock_up_down) %>%
+  pivot_longer(4:9, names_to = "type", values_to = "proba") %>% 
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "abrupt", "gradual"),
+         mechanism = ifelse(str_detect(type, "down")==TRUE, "synchrony", "stability"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism)) %>% 
+  filter(mechanism == "synchrony")
+
+# make matrix of country versus RTA
+dat_rta <- read_csv("data/RTA WHO/RTA_filtered.csv")
+
+dat_rta_list <- data.frame()
+for(i in 1:nrow(dat_rta)){
+  signatories <- strsplit(dat_rta$signatories[i],"; ")[[1]]
+  xx <- dat_rta[i,]
+  xx[1:length(signatories),] <- dat_rta[i,]
+  xx$signatories <- signatories
+  
+  if(i == 1){dat_rta_list <- xx
+  } else {dat_rta_list <- rbind(dat_rta_list, xx)}
+  
+  rm(xx, signatories)
+}
+
+match_with_rta <- read_csv("data/match_regions/match_regions_eez_rta_reconciled.csv") %>% 
+  dplyr::select(SOVEREIGN1, signatories) %>% 
+  filter(SOVEREIGN1 != "Republic of Mauritius") %>% 
+  distinct()
+
+dat_rta_list <- left_join(dat_rta_list, match_with_rta, by = "signatories") %>% 
+  dplyr::select(rta_id, SOVEREIGN1)
+
+dat_ecology_rta_synchrony <- dat_ecology_rta_synchrony %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  group_by(scale, spatial_scale, regions) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  filter(spatial_scale!="global")
+
+dat_synchrony_cnt <- dat_ecology_rta_synchrony %>% 
+  filter(spatial_scale == "regions")
+dat_synchrony_rta <- dat_ecology_rta_synchrony %>% 
+  filter(spatial_scale == "rta")
+
+dat_matrix <- left_join(dat_rta_list, dat_synchrony_cnt, by = c("SOVEREIGN1" = "regions"),
+                        relationship = "many-to-many") %>% 
+  mutate(rta_id = as.character(rta_id))
+dat_matrix <- left_join(dat_matrix, dat_synchrony_rta, by = c("rta_id" = "regions","scale")) %>% 
+  mutate(proba_ratio = proba.x/proba.y)
+
+
+#### D. Figure 4 ----
+dat_rta$rta_id <- as.character(dat_rta$rta_id)
+dat_fig4 <- dat_matrix %>% 
+  left_join(dat_rta, "rta_id") %>% 
+  filter(!is.na(scale)) %>% 
+  mutate(region = ifelse(str_detect(region, ";")==TRUE, "Cross-regional",region),
+         region = ifelse(region == "Commonwealth of Independent States (CIS), including certain associate and former member States", "Cross-regional", region)) %>% 
+  mutate(proba_ratio = ifelse(proba_ratio>2, 2, proba_ratio),
+         proba_ratio = ifelse(proba_ratio<0, 0, proba_ratio)) %>% 
+  arrange(region)
+
+png(paste0("figures/manuscript_figures/figure_4_synchrony.png"),
+    width = 12*200, height = 12*200, res = 200)
+ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)))) +
+  geom_boxplot(linetype = 2, lwd = 0.15, fill = "grey95") +
+  geom_point(alpha = 0.5, size = 2) +
+  geom_point(data = dat_fig4[dat_fig4$SOVEREIGN1 %in% c("United States","Russia","China","Guatemala","Spain","Ukraine"),], 
+             aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)),
+                 fill = SOVEREIGN1), shape = 21, size = 3) +
+  theme_bw() +
+  facet_grid(region ~ factor(scale, levels = c("gradual","abrupt"),
+                                labels = c("gradual","shocks")),
+             scale="free_y", space = "free_y") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "bottom",
+        text = element_text(size = 18)) +
+  xlab("Plurilateral RTAs") + ylab("Exposure ratio") +
+  geom_hline(aes(yintercept=1), linetype = "dashed") +
+  coord_flip() + ylim(0,2) +
+  guides(fill=guide_legend(title="")) +
+  scale_fill_manual(values = c("orange","red","cornflowerblue","lightgoldenrod1","darkorchid1","lightgreen"))
+dev.off()
+
+
+#### E. Summary statistics for results description ----
+dat_fig4 %>% 
+  group_by(rta_id, rta_acronym, scale) %>% 
+  summarize(proba_ratio = median(proba_ratio, na.rm=T)) %>% 
+  group_by(scale) %>% 
+  summarize(proba_ratio = median(proba_ratio, na.rm=T))
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "United Kingdom") %>% 
+  group_by(scale) %>% 
+  summarize(proba_ratio = mean(proba_ratio, na.rm=T),
+            proba.x = median(proba.x),
+            proba.y = median(proba.y))
+
+ukraine <- dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Ukraine")
+
+aussie <- dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Australia")
+
+eu <- dat_fig4 %>% 
+  filter(rta_acronym == "EU")
+
+median(eu$proba_ratio[eu$scale=="gradual"])
+min(eu$proba_ratio[eu$scale=="gradual"])
+max(eu$proba_ratio[eu$scale=="gradual"])
+median(eu$proba_ratio[eu$scale=="abrupt"])
+min(eu$proba_ratio[eu$scale=="abrupt"])
+max(eu$proba_ratio[eu$scale=="abrupt"])
+
+cnts <- dat_fig4 %>% 
+  group_by(SOVEREIGN1, rta_acronym, scale) %>% 
+  summarize(beneficial = ifelse(proba_ratio>1, "beneficial", "NA")) %>% 
+  filter(beneficial=="beneficial") %>% 
+  group_by(SOVEREIGN1, rta_acronym) %>% 
+  summarize(beneficial = length(beneficial)) %>% 
+  filter(beneficial==2)
+
+# number of ratios higher than one across exposure types
+nrow(cnts)
+
+# number of ratios higher than one by exposure type
+dat_fig4 %>% 
+  group_by(SOVEREIGN1, rta_acronym, scale) %>% 
+  summarize(beneficial = ifelse(proba_ratio>1, "beneficial", "NA")) %>% 
+  filter(beneficial=="beneficial") %>% 
+  group_by(scale) %>% 
+  summarize(beneficial = length(SOVEREIGN1))
+
+gstp <- dat_fig4 %>%
+  filter(rta_acronym == "GSTP")
+
+median(gstp$proba.x[gstp$scale=="gradual"])
+median(gstp$proba.y[gstp$scale=="gradual"])
+median(gstp$proba_ratio[gstp$scale=="gradual"])
+min(gstp$proba_ratio[gstp$scale=="gradual"])
+max(gstp$proba_ratio[gstp$scale=="gradual"])
+median(gstp$proba.x[gstp$scale=="abrupt"])
+median(gstp$proba.y[gstp$scale=="abrupt"])
+median(gstp$proba_ratio[gstp$scale=="abrupt"])
+min(gstp$proba_ratio[gstp$scale=="abrupt"])
+max(gstp$proba_ratio[gstp$scale=="abrupt"])
+
+mercosur <- dat_fig4 %>% 
+  filter(rta_acronym == "MERCOSUR")
+
+min(mercosur$proba_ratio[mercosur$scale=="gradual"])
+max(mercosur$proba_ratio[mercosur$scale=="gradual"])
+median(mercosur$proba_ratio[mercosur$scale=="gradual"])
+min(mercosur$proba_ratio[mercosur$scale=="abrupt"])
+max(mercosur$proba_ratio[mercosur$scale=="abrupt"])
+median(mercosur$proba_ratio[mercosur$scale=="abrupt"])
+
+sapta <- dat_fig4 %>% 
+  filter(rta_acronym == "SAPTA",
+         scale == "gradual")
+
+eac <- dat_fig4 %>% 
+  filter(rta_acronym == "EAC",
+         scale == "abrupt")
+
+# country examples
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "United States") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Russia") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Madagascar") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Guatemala") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Spain") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
+
+dat_fig4 %>% 
+  filter(SOVEREIGN1 == "Ukraine") %>% 
+  dplyr::select(rta_acronym, scale, proba_ratio)
