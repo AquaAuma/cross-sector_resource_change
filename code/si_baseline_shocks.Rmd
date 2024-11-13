@@ -160,7 +160,7 @@ shocks <- left_join(f_shocks, p_shocks, by = c("regions","climates","spans")) %>
   summarize (pshocks_f = median(pshocks_f, na.rm=T),
              pshocks_p = median(pshocks_p, na.rm=T))
 
-ggplot(shocks_map) + geom_sf(aes(fill = pshocks_p)) +
+ggplot(shocks_map) + geom_sf(aes(fill = pshocks_f)) +
   scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
     theme_bw() +
     theme(legend.position = "bottom",
@@ -171,3 +171,14 @@ ggplot(shocks_map) + geom_sf(aes(fill = pshocks_p)) +
 ```
 
 Relationship between past and future shock probabilities under SSP 1.26:
+
+```{r relationship past-future per country ssp 126, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(shocks, aes(x = pshocks_p, y = pshocks_f)) + geom_point() +
+  stat_smooth(method = "lm", col = "black") +
+  theme_bw() +
+  xlab("Probability 2 shocks+ 1985-2015") +
+  ylab("Probability 2 shocks+ 2070-2100") +
+  geom_abline(intercept = 0, slope = 1, lwd=1, linetype = "dashed",
+              col = "red")
+```
