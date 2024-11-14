@@ -1,6 +1,7 @@
 # national exposure to cross-sector climate impacts
 
-Code and analysis on short-term and long-term exposure to climate change across sectors of fisheries, water, and agriculture.
+Code and analysis on short-term and long-term exposure to climate change across sectors of fisheries, water, and agriculture related to the following manuscript: 
+Maureaud A. et al. *National exposure to gradual and sudden cross-sector climate impacts in a world connected by trade*
 
 Project aim: assess the cross-sector exposure to shocks and long-term change in water, agriculture, and fisheries resources from climate change and how they challenge current international trade and governance structures.
 
