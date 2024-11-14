@@ -1,0 +1,174 @@
+---
+title: "Compare p(X>=2) and p(X>=50%)"
+date: "`r format(Sys.time(), '%B, %Y')`"
+fontsize: 20pt
+output:
+  html_document:
+    toc: false
+    toc_depth: '3'
+    df_print: paged
+---
+
+Metrics compared for shocks:
+
+1. number of resources per country
+2. probability of at least two shocks p(X>=2)
+3. probability of at least 50% of shocks p(X>=50%). When there are 2 resources, p(X>=1) is applied, when there are 3-4 resources, p(X>=2) is applied and when there are 5-6 resources p(X>=3) is applied.
+4. probability of at least 50% of shocks p(X>=50%)bis. When there are 2 resources, p(X>=1) is applied, when there are 3 resources mean(p(X>=1),p(X>=2) is applied, when there are 4 resources p(X>=2) is applied, when there are 5 resources mean(p(X>=2),p(X>=3)) is applied, and when there are 6 resources p(X>=3) is applied.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+rm(list = ls())
+
+# load libraries
+library(here)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(sf)
+library(colorspace)
+library(ggpubr)
+library(GGally)
+
+# load p(X>=2)
+shocks_two <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(regions, climates, at_least_two_shocks)
+
+# load p(X>=50%)
+shocks_half <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_half.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(regions, climates, at_least_half_shocks, at_least_half_bis_shocks)
+
+# join the past and future shock probabilities
+shocks <- left_join(shocks_two, shocks_half, by = c("regions","climates")) %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "proba") %>% 
+  group_by(regions, type) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  pivot_wider(values_from = proba, names_from = type)
+
+# number of resources
+pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+pct_diff_ts_r_cs <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa)
+
+nres_r <- data.frame(pct_diff_ts_r_cs) %>% 
+  filter(!is.na(percent_diff),
+         output_variable %in% c("rice", "wheat", "soybean", "maize", "tcblog10", "qtot")) %>% 
+  group_by(regions) %>% 
+  summarize(n_res = length(unique(output_variable))/6)
+
+shocks <- left_join(shocks, nres_r, by = "regions")
+
+# load regions shapefile
+regions <- st_read("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
+  dplyr::select(UNION, SOVEREIGN1)
+
+# join the shapefile and data
+shocks_map <- left_join(regions, shocks, by = c("SOVEREIGN1" = "regions"))
+```
+
+Mapping out the p(X>=2), p(X>=50%), and p(X>=50%)bis for the SSP 5.85 climate scenario for shocks:
+
+```{r map shocks, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+shocks_map %>% 
+  rename(`p(X>=2)` = at_least_two_shocks,
+         `p(X>=50%)` = at_least_half_shocks,
+         `p(X>=50%)bis` = at_least_half_bis_shocks,
+         `# resources` = n_res) %>% 
+  pivot_longer(3:6, names_to = "type", values_to = "proba") %>% 
+ggplot() + geom_sf(aes(fill = proba)) +
+  scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
+  facet_wrap(~type, nrow = 2) +
+    theme_bw() +
+    theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.25,'lines')) +
+  ggtitle("Shock metrics")
+```
+
+Correlation table of shock metrics:
+
+```{r cor shocks, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+
+ggpairs(shocks, columns = c(2:5)) +
+  theme_bw() + theme(text = element_text(size = 16))
+
+```
+
+Metrics compared for gradual changes:
+
+1. number of resources per country
+2. probability of at least two resources changing beyond 25% p(X>=2)
+3. probability of at least 50% of resources changing beyond 25% p(X>=50%). When there are 2 resources, p(X>=1) is applied, when there are 3-4 resources, p(X>=2) is applied and when there are 5-6 resources p(X>=3) is applied.
+4. probability of at least 50% of resources changing beyond 25% p(X>=50%)bis. When there are 2 resources, p(X>=1) is applied, when there are 3 resources mean(p(X>=1),p(X>=2) is applied, when there are 4 resources p(X>=2) is applied, when there are 5 resources mean(p(X>=2),p(X>=3)) is applied, and when there are 6 resources p(X>=3) is applied.
+
+Mapping out the p(X>=2), p(X>=50%), and p(X>=50%)bis for the SSP 5.85 climate scenario for gradual changes: 
+
+```{r map gradual, echo=FALSE, warning=FALSE, message=FALSE, fig.width=10, fig.height=6}
+
+# load p(X>=2)
+gradual_two <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+  filter(time_window == 30,
+         type == "at_least_two_change_25") %>% 
+  dplyr::select(regions, climates, type, probas) %>% 
+  pivot_wider(names_from = type, values_from = probas)
+
+# load p(X>=50%)
+gradual_half <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas_half.csv") %>% 
+  filter(time_window == 30,
+         type %in% c("at_least_half_change_25","at_least_half_bis_change_25")) %>%
+  dplyr::select(regions, climates, type, probas) %>% 
+  pivot_wider(names_from = type, values_from = probas)
+
+# join the past and future shock probabilities
+gradual <- left_join(gradual_two, gradual_half, by = c("regions","climates")) %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "proba") %>% 
+  group_by(regions, type) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  pivot_wider(values_from = proba, names_from = type)
+
+# n_res
+gradual <- left_join(gradual, nres_r, by = "regions")
+
+# join the shapefile and data
+gradual_map <- left_join(regions, gradual, by = c("SOVEREIGN1" = "regions"))
+
+# map
+gradual_map %>% 
+  rename(`p(X>=2)` = at_least_two_change_25,
+         `p(X>=50%)` = at_least_half_change_25,
+         `p(X>=50%)bis` = at_least_half_bis_change_25,
+         `# resources` = n_res) %>% 
+  pivot_longer(3:6, names_to = "type", values_to = "proba") %>% 
+ggplot() + geom_sf(aes(fill = proba)) +
+  scale_fill_continuous_sequential(palette = "PuBuGn", expand = c(0,0)) +
+  facet_wrap(~type, nrow = 2) +
+    theme_bw() +
+    theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.25,'lines')) +
+  ggtitle("Gradual metrics")
+
+```
+
+Correlation table of gradual metrics:
+
+```{r cor gradual, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggpairs(gradual, columns = c(2:5)) +
+  theme_bw() + theme(text = element_text(size = 16))
+
+```
