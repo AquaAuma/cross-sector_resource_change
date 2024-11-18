@@ -1,5 +1,5 @@
 #### Figure 1 and alternative versions
-#### Coding: Aurore A. Maureaud, August 2024
+#### Coding: Aurore A. Maureaud, November 2024
 
 rm(list = ls())
 
