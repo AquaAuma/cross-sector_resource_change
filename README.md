@@ -16,21 +16,19 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 -   **functions/** contains the generic functions to complete the data processing
 -   **figures/** contains the generated figures
 
-## Data Access
+## Primary data sources
 
 -   The ISIMIP data files are not stored on this repository as ISIMIP has its own repository and data policy (see the [ISIMIP open repository and data policy](https://www.isimip.org/gettingstarted/data-access/)). For this project, the ISIMIP simulations were obtained by requesting access to the [DKRZ server](https://www.isimip.org/dashboard/accessing-isimip-data-dkrz-server/) in agreement with the project coordinators. Additional crop files were accessed on demand by requesting Jonas Jägermeyr.
 -   The EEZ land union shapefile is open access and available on the [marine regions website](https://www.marineregions.org/downloads.php), and the most recent version was used (version 3 released in 2020).
 -   The data on regional trade agreements was accessed on the World Trade Organization (WTO) website, and downloaded on April 2024.
 
-## Processed data products
+## Processed data access
 
 -   **data/data_processing**: processed data files by sector and aggregation scale
 
 -   **data/long-term_change**: probabilities data files by aggregation scale and metric type
 
 -   **data/short-term_change**: probabilities data files by aggregation scale and metric type
-
-Will be archived on Zenodo
 
 ## Contributions
 
