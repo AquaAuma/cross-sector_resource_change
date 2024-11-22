@@ -107,43 +107,35 @@ dat <- left_join(dat, nres_r, by = c("regions"))
 #### D. Figure 4 ----
 dat_plot <- dat %>% 
   filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
-         !regions %in% c("Antarctica","global"),
-         # regions %in% c("Afghanistan","Algeria","Angola",
-         #                "Argentina","Australia","Austria",
-         #                "Azerbaijan","Bahamas","Bahrain","Bangladesh" ,
-         #                "Belarus","Belgium","Belize","Benin","Bhutan",
-         #                "Bolivia","Botswana","Brazil","Bulgaria",
-         #                "Burundi","Cambodia", "Cameroon","Canada",
-         #                "Central African Republic","Chad","Chile",
-         #                "China","Colombia","Costa Rica","Croatia",
-         #                "Denmark","Ecuador","Egypt","Ethiopia","Finland",
-         #                "France","Gabon","Gambia","Germany","Greece","Guatemala" ,
-         #                "Guinea","Iceland","India","Indonesia","Iran",
-         #                "Iraq","Ireland","Israel","Italy","Ivory Coast",
-         #                "Japan","Kazakhstan","Kenya","Kuwait",
-         #                "Macedonia","Madagascar","Malaysia","Mali",
-         #                "Mauritania","Mexico","Mongolia","Morocco","Mozambique",
-         #                "Namibia","Netherlands","New Zealand","Niger","Nigeria","Norway",
-         #                "Pakistan","Panama","Papua New Guinea","Peru",
-         #                "Philippines","Poland","Portugal","Republic of the Congo","Romania",
-         #                "Russia","Rwanda","Senegal",
-         #                "South Africa","Spain","Sri Lanka","Sweden","Switzerland",
-         #                "Syria","Tanzania","Thailand","Turkey","Uganda","Ukraine",
-         #                "United Arab Emirates","United Kingdom","United States","Venezuela","Yemen")
-         )
+         !regions %in% c("Antarctica","global")) %>% 
+  mutate(regions = ifelse(regions == "Democratic Republic of the Congo", "D.R. Congo",regions),
+         regions = ifelse(regions == "Bosnia and Herzegovina","Bosnia H.",regions),
+         regions = ifelse(regions == "Federal Republic of Somalia","Somalia",regions),
+         regions = ifelse(regions == "Republic of the Congo","R. Congo",regions),
+         regions = ifelse(regions == "Dominican Republic", "Dominican R.",regions),
+         regions = ifelse(regions == "Trinidad and Tobago","Trinidad Tobago",regions),
+         regions = ifelse(regions == "Central African Republic","C. African R.",regions),
+         regions = ifelse(regions == "Grand Duchy of Luxembourg","Luxembourg",regions),
+         regions = ifelse(regions == "Papua New Guinea","Papua New G.",regions),
+         regions = ifelse(regions == "United Arab Emirates","U. Arab Emirates",regions),
+         regions = ifelse(regions == "Sao Tome and Principe","Sao Tome P.",regions),
+         regions = ifelse(regions == "Saint Vincent and the Grenadines","St Vincent G.",regions),
+         regions = ifelse(regions == "Saint Kitts and Nevis","St. Kitts N.",regions),
+         regions = ifelse(regions == "Marshall Islands","Marshall Is.",regions),
+         regions = ifelse(regions == "Antigua and Barbuda","Antigua Bar.",regions))
   
 col_res <- brewer.pal(9, "Greys")
   
 plot_shocks_a <- dat_plot %>% 
   filter(scale == "abrupt",
-         n_res %in% c(6,5)) %>% 
+         n_res %in% c(5,6)) %>% 
   ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
   geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
-  #geom_point(shape = 4, size = 0.5, color = "grey20", stroke = 2) +
   scale_fill_manual(values = c(col_res[7],col_res[9]), name = "# resources") +
   facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),
-                                                                 labels = c("Shocks","Gradual")), 
-             scale="free", space = "free_y") +
+                    labels = c("Shocks","Gradual")), 
+             scales="free", space = "free") +
+  coord_flip() +
   theme_bw() +
   theme(panel.grid.major.x = element_blank(),
         axis.text.x = element_text(angle = 45, hjust=1),
@@ -158,7 +150,164 @@ plot_shocks_b <- dat_plot %>%
          n_res %in% c(4,3,2)) %>% 
   ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
   geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
+  scale_fill_manual(values = c(col_res[1],col_res[3],col_res[5]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),
+                                                                 labels = c("Shocks","Gradual")), 
+             scale="free", space = "free_y") +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 11)) +
+  ylab("") + xlab("Exposure probability")
+
+order_countries <- dat_plot %>% 
+  filter(scale == "abrupt") %>% 
+  group_by(regions, n_res) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  arrange(desc(n_res), desc(proba)) %>% 
+  tibble::rownames_to_column() %>% 
+  select(-n_res, -proba)
+
+plot_gradual_c <- left_join(dat_plot, order_countries, by = "regions") %>% 
+  filter(scale == "gradual",
+         n_res %in% c(6,5)) %>% 
+  mutate(regions = fct_reorder(as.factor(regions),desc(as.numeric(rowname)))) %>% 
+  ggplot(aes(y = regions, x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
   #geom_point(shape = 4, size = 0.5, color = "grey20", stroke = 2) +
+  scale_fill_manual(values = c(col_res[7],col_res[9]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),
+                                                                 labels = c("Shocks","Gradual")), 
+             scale="free", space = "free_y") +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 11)) +
+  ylab("") + xlab("Exposure probability")
+
+plot_gradual_d <- left_join(dat_plot, order_countries, by = "regions") %>% 
+  filter(scale == "gradual",
+         n_res %in% c(4,3,2)) %>% 
+  mutate(regions = fct_reorder(as.factor(regions),desc(as.numeric(rowname)))) %>% 
+  ggplot(aes(y = regions, x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
+  #geom_point(shape = 4, size = 0.5, color = "grey20", stroke = 2) +
+  scale_fill_manual(values = c(col_res[1],col_res[3],col_res[5]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),
+                                                                 labels = c("Shocks","Gradual")), 
+             scale="free", space = "free_y") +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 11)) +
+  ylab("") + xlab("Exposure probability")
+
+png(paste0("figures/revised_figures/figure_4a.png"),
+    width = 4*200, height = 16*200, res = 200)
+plot_shocks_a
+dev.off()
+
+png(paste0("figures/revised_figures/figure_4b.png"),
+    width = 4*200, height = 16*200, res = 200)
+plot_shocks_b
+dev.off()
+
+png(paste0("figures/revised_figures/figure_4c.png"),
+    width = 4*200, height = 16*200, res = 200)
+plot_gradual_c
+dev.off()
+
+png(paste0("figures/revised_figures/figure_4d.png"),
+    width = 4*200, height = 16*200, res = 200)
+plot_gradual_d
+dev.off()
+
+
+#### E. Figure 4bis ----
+plot_shocks_6 <- dat_plot %>% 
+  filter(scale == "abrupt",
+         n_res == 6) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.7, outlier.shape = NA) +
+  scale_fill_manual(values = c(col_res[9]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),labels = c("Shocks","Gradual")), 
+             scales="free", space = "free") +
+  coord_flip() +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 18)) +
+  ylab("") + xlab("Exposure probability")
+
+plot_shocks_5 <- dat_plot %>% 
+  filter(scale == "abrupt",
+         n_res == 5) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
+  scale_fill_manual(values = c(col_res[7]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),labels = c("Shocks","Gradual")), 
+             scales="free", space = "free") +
+  coord_flip() +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 18)) +
+  ylab("") + xlab("Exposure probability")
+
+plot_shocks_4 <- dat_plot %>% 
+  filter(scale == "abrupt",
+         n_res == 4) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
+  scale_fill_manual(values = c(col_res[5]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),labels = c("Shocks","Gradual")), 
+             scales="free", space = "free") +
+  coord_flip() +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 18)) +
+  ylab("") + xlab("Exposure probability")
+
+plot_shocks_3 <- dat_plot %>% 
+  filter(scale == "abrupt",
+         n_res == 3) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
+  scale_fill_manual(values = c(col_res[3]), name = "# resources") +
+  facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),labels = c("Shocks","Gradual")), 
+             scales="free", space = "free") +
+  coord_flip() +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 18)) +
+  ylab("") + xlab("Exposure probability")
+
+plot_shocks_b <- dat_plot %>% 
+  filter(scale == "abrupt",
+         n_res %in% c(4,3,2)) %>% 
+  ggplot(aes(y = reorder(regions, proba, FUN = function(x) median(x, na.rm=TRUE)), x = proba)) + 
+  geom_boxplot(aes(fill = as.factor(n_res)), alpha = 0.8, outlier.shape = NA) +
   scale_fill_manual(values = c(col_res[1],col_res[3],col_res[5]), name = "# resources") +
   facet_grid(factor(n_res, levels=c("6","5","4","3","2"))~factor(scale, levels=c("abrupt","gradual"),
                                                                  labels = c("Shocks","Gradual")), 

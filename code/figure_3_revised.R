@@ -16,6 +16,9 @@ library(sf)
 sf_use_s2(FALSE)
 library(colorspace)
 library(ggpubr)
+library("rnaturalearth")
+library("rnaturalearthdata")
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
 
 ################################################################################
@@ -99,87 +102,99 @@ regions_dat <- left_join(regions, dat_mec_ssp585, by = c("SOVEREIGN1" = "regions
 png(paste0("figures/revised_figures/figure_3_a.png"),
     width = 8*200, height = 4*200, res = 200)
 regions_dat %>%
-  ggplot() + geom_sf(aes(fill = at_least_two_shocks_down)) +
+  ggplot() + 
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_shocks_down), alpha = 0.8) +
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn",
                                    begin = 0, end = 1,
                                    limits=c(0,1),
                                    breaks= c(0,0.5,1))+
   coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
-  theme(legend.position = c(.15, .1),
+  theme(legend.position = c(.15, .15),
         legend.direction="horizontal",
         legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.5,'lines'),
-        legend.key.size = unit(0.5, 'cm'),
-        legend.background=element_blank())
+        legend.key.size = unit(0.75,'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
 png(paste0("figures/revised_figures/figure_3_c.png"),
     width = 8*200, height = 4*200, res = 200)
 regions_dat %>%
   mutate(at_least_two_25_down = ifelse(at_least_two_25_down<0, 0, at_least_two_25_down)) %>% 
-  ggplot() + geom_sf(aes(fill = at_least_two_25_down)) +
+  ggplot() + 
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_25_down), alpha = 0.8) +
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn",
                                    begin = 0, end = 1,
                                    limits=c(0,1),
                                    breaks= c(0,0.5,1))+
   coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
-  theme(legend.position = c(.15, .1),
+  theme(legend.position = c(.15, .15),
         legend.direction="horizontal",
         legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.5,'lines'),
-        legend.key.size = unit(0.5, 'cm'),
-        legend.background=element_blank())
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
 png(paste0("figures/revised_figures/figure_3_b.png"),
     width = 8*200, height = 4*200, res = 200)
 regions_dat %>%
-  ggplot() + geom_sf(aes(fill = at_least_one_shock_up_down)) +
+  ggplot() + 
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_one_shock_up_down), alpha = 0.8) +
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn",
                                    begin = 0, end = 1,
                                    limits=c(0,1),
                                    breaks= c(0,0.5,1))+
   coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
-  theme(legend.position = c(.15, .1),
+  theme(legend.position = c(.15, .15),
         legend.direction="horizontal",
         legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.5,'lines'),
-        legend.key.size = unit(0.5, 'cm'),
-        legend.background=element_blank())
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
 png(paste0("figures/revised_figures/figure_3_d.png"),
     width = 8*200, height = 4*200, res = 200)
 regions_dat %>%
   mutate(at_least_one_25_up_down = ifelse(at_least_one_25_up_down<0, 0, at_least_one_25_up_down)) %>% 
-  ggplot() + geom_sf(aes(fill = at_least_one_25_up_down)) +
+  ggplot() + 
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_one_25_up_down), alpha = 0.8) +
   theme_bw() +
   scale_fill_continuous_sequential(palette = "PuBuGn",
                                    begin = 0, end = 1,
                                    limits=c(0,1),
                                    breaks= c(0,0.5,1))+
   coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
-  theme(legend.position = c(.15, .1),
+  theme(legend.position = c(.15, .15),
         legend.direction="horizontal",
         legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.5,'lines'),
-        legend.key.size = unit(0.5, 'cm'),
-        legend.background=element_blank())
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
 # # latitudinal distributions

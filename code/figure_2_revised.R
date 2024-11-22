@@ -16,6 +16,16 @@ library(sf)
 sf_use_s2(FALSE)
 library(colorspace)
 library(ggpubr)
+library(ggpattern)
+
+regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
+  dplyr::select(SOVEREIGN1, ISO_SOV1) %>% 
+  st_drop_geometry() %>% 
+  distinct()
 
 
 ################################################################################
@@ -49,8 +59,7 @@ dat <- left_join(long_term, shock_probas, by = c("climates", "regions")) %>%
   filter(regions != "Antarctica")
 
 
-
-#### B. boxplot
+#### B. boxplot ----
 dat <- dat %>% 
   select(regions, climates, at_least_two_shocks, at_least_two_change_25) %>% 
   mutate(ssp = ifelse(str_detect(climates, "ssp126"),"1.26","5.85"),
@@ -61,14 +70,52 @@ dat <- dat %>%
   pivot_longer(3:4, names_to = "type", values_to = "proba") %>% 
   data.frame()
 
-png(paste0("figures/revised_figures/figure_2.png"),
-    width = 4*200, height = 4*200, res = 200)
-ggplot(dat) + geom_boxplot(aes(x = type, y = proba, fill = ssp), alpha = 0.5) +
+# boxplot
+png(paste0("figures/revised_figures/figure_2a.png"),
+    width = 4*200, height = 6*200, res = 200)
+ggplot(dat, aes(x = factor(type, levels = c("shock","gradual"), labels = c("shock","gradual")), y = proba, pattern = ssp)) +
+  geom_boxplot_pattern(position = position_dodge(width = 0.8),
+                       aes(pattern = ssp), pattern_fill = "black",
+                       pattern_density = 0.05, pattern_angle = 45,
+                       pattern_spacing = 0.03, width = 0.6) +
+  scale_pattern_manual(values = c("none", "stripe")) +
   theme_bw() +
-  scale_fill_manual(values = c("white","black")) +
   theme(panel.grid.minor = element_blank(),
         axis.text.x = element_text(angle = -45, vjust = -0.5),
-        text = element_text(size = 10)) +
-  ylab("p(X>=2)") + xlab("Exposure type") +
+        text = element_text(size = 18)) +
+  ylab("Probability of at least 2 resources changing") + xlab("Exposure type") +
   labs(fill="SSP")
 dev.off()
+
+# relationship between metrics
+dat_points <- dat %>% 
+  filter(ssp =="5.85") %>% 
+  pivot_wider(names_from = type, values_from = proba)
+dat_points <- left_join(dat_points, regions, by = c("regions" = "SOVEREIGN1"))
+
+png(paste0("figures/revised_figures/figure_2b.png"),
+    width = 10*200, height = 6*200, res = 200)
+ggplot(dat_points, aes(y = gradual, x = shock)) +
+  # geom_rect(xmin = 0.75, xmax = 2, ymin = 0.75, ymax = 2, linetype = "dashed",
+  #           fill = "lightgrey") +
+  geom_point(alpha = 0.2, size = 3) +
+  geom_point(data = dat_points[dat_points$shock>0.75 & dat_points$gradual>0.75,],
+             alpha = 0.5, size = 3) +
+  geom_point(data = dat_points[dat_points$regions=="global",], 
+             aes(y = gradual, x = shock),
+             col = "red", size = 3) +
+  theme_bw() + xlim(0,1) + ylim(0,1) +
+  theme(strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.75,'lines'),
+        strip.text = element_text(size = 14), 
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        text = element_text(size = 18)) +
+  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+  geom_text_repel(data = dat_points[dat_points$shock>0.75 & dat_points$gradual>0.75,],
+                   aes(label = regions), size=5, max.overlaps=30)
+  # geom_text(data = dat_points[dat_points$shock>0.75 & dat_points$gradual>0.75,],
+  #           aes(label = ISO_SOV1), size = 4)
+dev.off()
+
