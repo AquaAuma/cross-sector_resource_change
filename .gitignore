@@ -14,8 +14,5 @@ data/short-term_change/global_shocks_time-series_1985-2015_spans.csv
 data/short-term_change/global_shocks_time-series_1985-2015.csv
 data/short-term_change/rta_shocks_time-series_1985-2015_spans.csv
 data/short-term_change/rta_shocks_time-series_1985-2015.csv
-data/long-term_change/countries_time-series_1985-2015_spans.csv
-data/long-term_change/countries_time-series_1985-2015.csv
-data/long-term_change/global_time-series_1985-2015_spans.csv
-data/long-term_change/global_time-series_1985-2015.csv
 data/long-term_change/rta_time-series_1985-2015_2070-2099.csv
+data/long-term_change/rta_average_1985-2015_2070-2099.csv

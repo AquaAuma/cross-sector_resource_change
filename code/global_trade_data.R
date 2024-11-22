@@ -11,10 +11,10 @@ library(gridExtra)
 library(readxl)
 
 # load cross-sector climate exposure
-dat_ecology <- read_csv("data/ecological_data/cross-sector_climate_exposure.csv")
+# dat_ecology <- read_csv("data/ecological_data/cross-sector_climate_exposure.csv")
 
 # load RTA database
-dat_rta <- read_xls("data/RTA WHO/FTA.xls", sheet = 1) %>% 
+dat_rta <- read_xls("data/RTA WTO/FTA.xls", sheet = 1) %>% 
   dplyr::select(`RTA ID`,`RTA Name`,`Status`,`Accession?`,
                 `RTA Composition`,`Current signatories`,
                 `Region`) %>% 
@@ -30,7 +30,7 @@ dat_rta <- read_xls("data/RTA WHO/FTA.xls", sheet = 1) %>%
                        "Early announcement-Signed"),
          accession == "No")
 
-write.csv(dat_rta, file = "data/RTA WHO/RTA_filtered.csv",
+write.csv(dat_rta, file = "data/RTA WTO/RTA_filtered.csv",
           row.names = F)
 
 

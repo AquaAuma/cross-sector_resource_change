@@ -123,7 +123,7 @@ dat_ecology_rta <- left_join(dat, dat_mec, by = c("regions", "climates", "spatia
          mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation", mechanism))
 
 # make matrix of country versus RTA
-dat_rta <- read_csv("data/RTA WHO/RTA_filtered.csv")
+dat_rta <- read_csv("data/RTA WTO/RTA_filtered.csv")
 
 dat_rta_list <- data.frame()
 for(i in 1:nrow(dat_rta)){

@@ -22,7 +22,7 @@ regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>%
   st_drop_geometry()
 
 # regions from RTA/WTO
-dat_rta <- read_xls("data/RTA WHO/FTA.xls", sheet = 1) %>% 
+dat_rta <- read_xls("data/RTA WTO/FTA.xls", sheet = 1) %>% 
   dplyr::select(`RTA ID`,`RTA Name`,`Status`,
                 `RTA Composition`,`Current signatories`) %>% 
   rename(rta_id = `RTA ID`,
