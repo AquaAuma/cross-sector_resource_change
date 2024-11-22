@@ -5,6 +5,7 @@
 
 data/crop_areas/*
 data/data_processing/*
-data/short-term_change/*
-data/long-term_change/*
 data/ecological_data/*
+data/short-term_change/*time-series_1985-2015_spans.csv
+data/short-term_change/*time-series_2010-2019.csv
+data/short-term_change/*time-series_1985-2015.csv
