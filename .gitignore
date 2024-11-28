@@ -3,6 +3,9 @@
 .RData
 .Ruserdata
 
+.DS_Store
+**/.DS_Store
+
 data/crop_areas/*
 data/data_processing/*
 data/processed_data/*
