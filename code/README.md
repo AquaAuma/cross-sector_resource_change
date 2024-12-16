@@ -14,11 +14,11 @@ The following code files were applied to complete the data processing:
 
 -   **1.cross-sector_long-term.R**: calculate % difference resource change and probabilities of long-term change for p(X>=2)
 
--   **1.bis.cross-sector_long-term.R**: calculate % difference resource change and probabilities of long-term change for p(X>=50%)
+-   **1.cross-sector_long-term_bis.R**: calculate % difference resource change and probabilities of long-term change for p(X>=50%)
 
 -   **2.cross-sector_shocks.R**: identify resource shocks and calculate probabilities of short-term change for p(X>=2)
 
--   **2.bis.cross-sector_shocks.R**: identify resource shocks and calculate probabilities of short-term change for p(X>=50%)
+-   **2.cross-sector_shocks_bis.R**: identify resource shocks and calculate probabilities of short-term change for p(X>=50%)
 
 ### Manuscript analyses and figures
 
