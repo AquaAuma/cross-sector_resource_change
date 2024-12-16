@@ -1,5 +1,5 @@
 #### Figure 5
-#### Coding: Aurore A. Maureaud, November 2024
+#### Coding: Aurore A. Maureaud, December 2024
 
 rm(list = ls())
 
@@ -178,7 +178,7 @@ dat_fig4 <- dat_matrix %>%
          scale == "abrupt") %>% 
   arrange(region)
 
-png(paste0("figures/revised_figures/figure_5_a.png"),
+png(paste0("figures/figure_5_a.png"),
     width = 6*200, height = 8*200, res = 200)
 ggplot(dat_fig4, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)))) +
   geom_boxplot(linetype = 1, lwd = 0.15, fill = "grey70") +
@@ -219,7 +219,7 @@ dat_fig4b <- dat_matrix %>%
   summarize(proba_ratio = median(proba_ratio, na.rm=T)) %>% 
   ungroup()
 
-png(paste0("figures/revised_figures/figure_5_b.png"),
+png(paste0("figures/figure_5_b.png"),
     width = 12*200, height = 3*200, res = 200)
 ggplot(dat_fig4b, aes(x = scale, y = proba_ratio)) +
   geom_boxplot(linetype = 1, fill = "white") +
@@ -258,7 +258,7 @@ dat_eu <- dat_matrix %>%
   arrange(region)
 dat_eu_map <- left_join(regions, dat_eu, by=c("TERRITORY1"="SOVEREIGN1"))
 
-png(paste0("figures/revised_figures/figure_5_c.png"),
+png(paste0("figures/figure_5_c.png"),
     width = 8*200, height = 6*200, res = 200)
 dat_eu_map %>% 
   st_as_sf() %>% 
@@ -299,7 +299,7 @@ dat_mer <- dat_matrix %>%
 dat_mer_map <- left_join(regions, dat_mer, by=c("TERRITORY1"="SOVEREIGN1"))
 
 
-png(paste0("figures/revised_figures/figure_5_d.png"),
+png(paste0("figures/figure_5_d.png"),
     width = 8*200, height = 6*200, res = 200)
 dat_mer_map %>% 
   st_as_sf() %>% 
@@ -319,4 +319,36 @@ dat_mer_map %>%
         panel.grid.minor = element_blank(),
         text = element_text(size = 22))
 dev.off()
+
+
+#### E. Supplementary figure 9 ----
+
+dat_sfig9 <- dat_matrix %>% 
+  left_join(dat_rta, "rta_id") %>% 
+  filter(!is.na(scale)) %>% 
+  mutate(region = ifelse(str_detect(region, ";")==TRUE, "Cross-regional",region),
+         region = ifelse(region == "Commonwealth of Independent States (CIS), including certain associate and former member States", "Cross-regional", region)) %>% 
+  mutate(proba_ratio = ifelse(proba_ratio>2, 2, proba_ratio),
+         rta_acronym = ifelse(rta_acronym == "USMCA/CUSMAT/T-MEC","USA/MEX/CAN",rta_acronym)) %>% 
   arrange(region)
+
+png(paste0("figures/supplementary_figure_9.png"),
+    width = 6*400, height = 8*300, res = 200)
+ggplot(dat_sfig9, aes(y = proba_ratio, x = reorder(rta_acronym, desc(rta_acronym)))) +
+  geom_boxplot(linetype = 1, lwd = 0.15, fill = "grey70") +
+  geom_point(alpha = 0.5, size = 2) +
+  theme_bw() +
+  facet_grid(region ~ factor(scale, levels = c("abrupt","gradual"),
+                             labels=c("Shocks","Gradual")),
+             scale="free_y", space = "free_y") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1),
+        strip.text.y = element_text(angle = 0),
+        panel.spacing = unit(0,'lines'),
+        legend.position = "none",
+        text = element_text(size = 18),
+        panel.grid = element_blank()) +
+  xlab("Plurilateral RTAs") + ylab("Exposure ratio") +
+  geom_hline(aes(yintercept=1), linetype = "dashed") +
+  coord_flip() + ylim(0,2) +
+  guides(fill=guide_legend(title=""))
+dev.off()

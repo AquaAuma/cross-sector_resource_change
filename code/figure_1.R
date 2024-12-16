@@ -1,5 +1,5 @@
 #### Figure 1 and alternative versions
-#### Coding: Aurore A. Maureaud, November 2024
+#### Coding: Aurore A. Maureaud, December 2024
 
 rm(list = ls())
 
@@ -15,28 +15,32 @@ library(readxl)
 library(sf)
 sf_use_s2(FALSE)
 library(colorspace)
+library(ggpubr)
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
 
 ################################################################################
-#### 1. ARE COUNTRIES EXPERIENCING SHORT- AND LONG-TERM CROSS-SECTOR CHANGES?
+#### 1. Exposure of countries to cross-sector exposure types
 ################################################################################
 
-#### A. load data ----
+#### A. load data of cross-sector change ----
 # countries
 shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
   filter(spans == "shock_0.75") %>% 
   dplyr::select(-spans)
 change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
-  filter(time_window == 30) %>% 
-  dplyr::select(-spatial_scale, -time_window)
+  dplyr::select(-spatial_scale)
 
 # global
 shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans.csv") %>% 
   mutate(regions = "global") %>% 
   filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans) %>% 
   dplyr::select(names(shock_probas_r_cs))
 change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas.csv") %>% 
-  filter(time_window == 30) %>% 
   mutate(regions = "global") %>% 
   dplyr::select(names(change_probas_r_cs))
 
@@ -44,314 +48,400 @@ change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_19
 shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
 long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
   pivot_wider(names_from = "type", values_from = "probas")
-dat <- left_join(long_term, shock_probas, by = c("climates", "regions")) %>% 
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
   filter(regions != "Antarctica")
 
+# eez-land merge shapefile
+regions <- st_read("data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+  filter(POL_TYPE != "Joint regime (EEZ)",
+         is.na(SOVEREIGN2),
+         SOVEREIGN1 != "Republic of Mauritius",
+         UNION != "Antarctica") %>% 
+  dplyr::select(UNION, SOVEREIGN1)
 
-#### B. main figure ----
-# example plots for cross-sector conditions
+#### B. figure 1 maps ssp5.85 ----
+dat_ssp585 <- dat %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_two_change_25 = mean(at_least_two_change_25, na.rm = T),
+            at_least_two_shocks = mean(at_least_two_shocks, na.rm = T))
 
-dat_points <- dat %>% 
-  filter(!is.na(at_least_two_shocks),
-         !is.na(at_least_two_change_10)) %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) 
+regions_dat <- left_join(regions, dat_ssp585, by = c("SOVEREIGN1" = "regions")) 
 
-map_points <- dat_points %>% 
-  ggplot(aes(y = at_least_two_change_10, x = at_least_two_shocks)) +
-  geom_point(alpha = 0.5) +
-  facet_grid(ssp ~ climate_model) +
-  geom_point(data = dat_points[dat_points$regions=="global",], 
-             aes(y = at_least_two_change_10, x = at_least_two_shocks),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  theme(strip.background = element_rect(color = "white", fill = "white"),
-        panel.spacing = unit(0.75,'lines'),
-        strip.text = element_text(size = 14), 
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  ylab("Probability of at least 2 res. changing by >10%") + xlab("Probability of at least 2 shocks") +
-  geom_text_repel(data = dat_points[dat_points$at_least_two_shocks>0.5 & dat_points$at_least_two_change_10>0.5,], 
-                  aes(label = regions), size=3, max.overlaps=20)
-
-dat_densities <- dat %>% 
-  filter(!is.na(at_least_two_shocks),
-         !is.na(at_least_two_change_10)) %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
-  select(regions, climates, ssp, climate_model, at_least_two_change_10, at_least_two_shocks) %>%
-  rename(`gradual` = at_least_two_change_10, 
-         `abrupt` = at_least_two_shocks) %>% 
-  pivot_longer(5:6, names_to = "type", values_to = "probas") 
-
-mean_densities <- dat_densities %>% 
-  filter(regions != "global") %>% 
-  group_by(ssp, climate_model, type) %>% 
-  summarize(probas = mean(probas, na.rm=T))
-
-plot_densities <- dat_densities %>% 
-  ggplot(aes(x = probas, fill = type, linetype = climate_model, color = type)) + geom_density(alpha = 0.5) +
+# SSP 585 shocks
+png(paste0("figures/figure_1_a.png"),
+    width = 8*200, height = 4*200, res = 200)
+regions_dat %>%
+  ggplot() +   
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_shocks), alpha = 0.8) +
   theme_bw() +
-  facet_wrap(~ssp, scales = "free", nrow=2) +
-  theme(strip.background = element_rect(color = "white", fill = "white"),
-        panel.spacing = unit(0.75,'lines'),
-        strip.text = element_blank(),
-        legend.position = c(0.35,0.25),
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks= c(0,0.5,1))+
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  xlab("Probability") + ylab("") +
-  scale_fill_manual(values = c("grey","grey40"), name="") + 
-  scale_linetype_discrete(name="") + ggtitle("Density") +
-  geom_vline(data = mean_densities, aes(xintercept = probas, linetype = climate_model, color = type)) +
-  scale_colour_manual(values = c("grey","grey40"), name="") 
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75,'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
 
+# SSP 585 gradual changes
+png(paste0("figures/figure_1_b.png"),
+    width = 8*200, height = 4*200, res = 200)
+regions_dat %>%
+  mutate(at_least_two_change_25 = ifelse(at_least_two_change_25<0, 0, at_least_two_change_25)) %>% 
+  ggplot() +
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_change_25), alpha = 0.8) +
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks = c(0,0.5,1)) +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
 
-png(paste0("figures/manuscript_figures/figure_1_version_1.png"),
-    width = 12*200, height = 6*200, res = 200)
-grid.arrange(map_points, plot_densities, ncol = 2, widths = c(3,1))
+# number of resources
+nres_r <- read_csv("data/data_processing/nres.csv")
+nres_r_map <- left_join(regions, nres_r, by = c("SOVEREIGN1" = "regions")) 
+
+png(paste0("figures/figure_1_c.png"),
+    width = 8*200, height = 4*200, res = 200)
+nres_r_map %>% 
+  ggplot() + 
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = as.factor(n_res)), alpha = 0.8) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Greys") +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .1),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.4, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
 
-#### C. Alternative versions of Figure 1 ----
-# with threshold of 25%
-dat_points <- dat %>% 
-  filter(!is.na(at_least_two_shocks),
-         !is.na(at_least_two_change_25)) %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) 
+#### C. Supplemental figure 1 ----
 
-map_points <- dat_points %>% 
-  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
-  geom_point(alpha = 0.5) +
-  facet_grid(ssp ~ climate_model) +
-  geom_point(data = dat_points[dat_points$regions=="global",], 
-             aes(y = at_least_two_change_25, x = at_least_two_shocks),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  theme(strip.background = element_rect(color = "white", fill = "white"),
-        panel.spacing = unit(0.75,'lines'),
-        strip.text = element_text(size = 14), 
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
-  geom_text_repel(data = dat_points[dat_points$at_least_two_shocks>0.5 & dat_points$at_least_two_change_25>0.5,], 
-                  aes(label = regions), size=3, max.overlaps=20)
+# latitudinal distributions
+coords <- regions_dat %>%
+  st_centroid() %>%
+  st_coordinates()
 
-dat_densities <- dat %>% 
-  filter(!is.na(at_least_two_shocks),
-         !is.na(at_least_two_change_25)) %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
-  select(regions, climates, ssp, climate_model, at_least_two_change_25, at_least_two_shocks) %>%
-  rename(`gradual` = at_least_two_change_25, 
-         `abrupt` = at_least_two_shocks) %>% 
-  pivot_longer(5:6, names_to = "type", values_to = "probas")
+densities_dat <- cbind(regions_dat, coords) %>%
+  st_drop_geometry() %>%
+  pivot_longer(c(3:4), values_to = "proba", names_to = "type") %>%
+  mutate(scale = ifelse(str_detect(type, "shock")==TRUE, "shock", "gradual"),
+         mechanism = ifelse(str_detect(type, "up_down")==TRUE, "compensation","change"),
+         mechanism = ifelse(str_detect(type, "two_shocks_down")==TRUE,"synchrony",mechanism),
+         mechanism = ifelse(str_detect(type, "two_25_down")==TRUE,"synchrony",mechanism))
 
-mean_densities <- dat_densities %>%
-  filter(regions != "global") %>% 
-  group_by(ssp, climate_model, type) %>% 
-  summarize(probas = mean(probas, na.rm=T))
-
-plot_densities <- ggplot(dat_densities, aes(x = probas, fill = type, linetype = climate_model, color = type)) + geom_density(alpha = 0.5) +
+# plot latitudinal gradients
+gradients <- ggplot(densities_dat, aes(y = proba, x = Y, linetype = scale)) +
+  geom_smooth(span = 0.35, se = FALSE, col = "black") +
   theme_bw() +
-  facet_wrap(~ssp, scales = "free", nrow=2) +
+  facet_wrap(~mechanism, scales = "free", nrow = 1) + coord_flip() +
   theme(strip.background = element_rect(color = "white", fill = "white"),
         panel.spacing = unit(0.75,'lines'),
-        strip.text = element_blank(),
-        legend.position = c(0.65,0.8),
-        panel.grid.major = element_blank(), 
+        panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  xlab("Probability") + ylab("") +
-  scale_fill_manual(values = c("grey","grey40"), name="") + 
-  scale_linetype_discrete(name="") + ggtitle("Density") +
-  geom_vline(data = mean_densities, aes(xintercept = probas, linetype = climate_model, color = type)) +
-  scale_colour_manual(values = c("grey","grey40"), name="") 
+  ylab("Probability") + xlab("Latitude") +
+  scale_linetype_discrete(name="")
 
-
-png(paste0("figures/manuscript_figures/figure_1_version_2.png"),
-    width = 12*200, height = 6*200, res = 200)
-grid.arrange(map_points, plot_densities, ncol = 2, widths = c(3,1))
+png(paste0("figures/supplementary_figure_1.png"),
+    width = 7*150, height = 7*200, res = 200)
+gradients
 dev.off()
 
 
-#### D. figure 1 with average of climate models ----
-dat_points <- dat %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
-  group_by(regions, ssp) %>% 
-  summarize(at_least_two_shocks = mean(at_least_two_shocks, na.rm=T),
-            at_least_two_change_25 = mean(at_least_two_change_25, na.rm=T))
+#### D. Supplemental figure 2 ----
+# figure 1 for ssp 1.26
 
-map_points <- dat_points %>% 
-  ggplot(aes(y = at_least_two_change_25, x = at_least_two_shocks)) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~ssp, nrow = 2) +
-  geom_point(data = dat_points[dat_points$regions=="global",], 
-             aes(y = at_least_two_change_25, x = at_least_two_shocks),
-             col = "red") +
-  theme_bw() + xlim(0,1) + ylim(0,1) +
-  theme(strip.background = element_rect(color = "white", fill = "white"),
-        panel.spacing = unit(0.75,'lines'),
-        strip.text = element_text(size = 14), 
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
-  geom_text_repel(data = dat_points[dat_points$at_least_two_shocks>0.75 & dat_points$at_least_two_change_25>0.75,], 
-                  aes(label = regions), size=3, max.overlaps=20) +
-  geom_text_repel(data = dat_points[dat_points$at_least_two_shocks<0.25 & dat_points$at_least_two_change_25>0.75,], 
-                  aes(label = regions), size=3, max.overlaps=20) +
-  geom_text_repel(data = dat_points[dat_points$at_least_two_shocks>0.75 & dat_points$at_least_two_change_25<0.25,], 
-                  aes(label = regions), size=3, max.overlaps=20)
+dat_ssp126 <- dat %>% 
+  filter(climates %in% c("gfdl-esm4 ssp126","ipsl-cm6a-lr ssp126"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_two_change_25 = mean(at_least_two_change_25, na.rm = T),
+            at_least_two_shocks = mean(at_least_two_shocks, na.rm = T))
 
-dat_densities <- dat %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
-  group_by(regions, ssp) %>% 
-  summarize(at_least_two_shocks = mean(at_least_two_shocks, na.rm=T),
-            at_least_two_change_25 = mean(at_least_two_change_25, na.rm=T)) %>% 
-  rename(`gradual` = at_least_two_change_25, 
-         `abrupt` = at_least_two_shocks) %>% 
-  pivot_longer(3:4, names_to = "type", values_to = "probas")
+regions_dat <- left_join(regions, dat_ssp126, by = c("SOVEREIGN1" = "regions")) 
 
-mean_densities <- dat_densities %>%
-  filter(regions != "global") %>% 
-  group_by(ssp, type) %>% 
-  summarize(probas = mean(probas, na.rm=T))
-
-plot_densities <- ggplot(dat_densities, aes(x = probas, fill = type, color = type)) + geom_density(alpha = 0.5) +
+# SSP 126 shocks
+png(paste0("figures/supplementary_figure_2_a.png"),
+    width = 8*200, height = 4*200, res = 200)
+regions_dat %>%
+  ggplot() +   
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_shocks), alpha = 0.8) +
   theme_bw() +
-  facet_wrap(~ssp, scales = "free", nrow=2) +
-  theme(strip.background = element_rect(color = "white", fill = "white"),
-        panel.spacing = unit(0.75,'lines'),
-        strip.text = element_blank(),
-        legend.position = c(0.65,0.8),
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks= c(0,0.5,1))+
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        text = element_text(size = 14)) +
-  scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  xlab("Probability") + ylab("") +
-  scale_fill_manual(values = c("grey","grey40"), name="") + 
-  scale_linetype_discrete(name="") + ggtitle("Density") +
-  geom_vline(data = mean_densities, aes(xintercept = probas, color = type)) +
-  scale_colour_manual(values = c("grey","grey40"), name="") 
-
-
-png(paste0("figures/manuscript_figures/figure_1_version_3.png"),
-    width = 10*200, height = 6*200, res = 200)
-grid.arrange(map_points, plot_densities, ncol = 2)
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75,'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
 dev.off()
 
-# list of countries in corners of the plots
-list_countries_1 <- dat_points %>% 
-  group_by(regions, ssp) %>% 
-  filter(at_least_two_change_25>0.75 & at_least_two_shocks>0.75) %>% 
-  pull(regions)
+# SSP 126 gradual changes
+png(paste0("figures/supplementary_figure_2_b.png"),
+    width = 8*200, height = 4*200, res = 200)
+regions_dat %>%
+  mutate(at_least_two_change_25 = ifelse(at_least_two_change_25<0, 0, at_least_two_change_25)) %>% 
+  ggplot() +
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = at_least_two_change_25), alpha = 0.8) +
+  theme_bw() +
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks = c(0,0.5,1)) +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
 
-list_countries_2 <- dat_points %>% 
-  group_by(regions, ssp) %>% 
-  filter(at_least_two_change_25>0.75 & at_least_two_shocks<0.25) %>% 
-  pull(regions)
 
-list_countries_3 <- dat_points %>% 
-  group_by(regions, ssp) %>% 
-  filter(at_least_two_change_25<0.25 & at_least_two_shocks>0.75) %>% 
-  pull(regions)
+#### E. supplemental figure 3 ----
+shock_probas_r_cs_mec <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(-spans, -at_least_three_shocks_up, -at_least_two_shocks_up)
+change_probas_r_cs_mec <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  dplyr::select(-spatial_scale)
 
-list_countries_4 <- dat_points %>% 
-  group_by(regions, ssp) %>% 
-  filter(at_least_two_change_25<0.25 & at_least_two_shocks<0.25,
-         ssp == "SSP 1.26") %>% 
-  pull(regions)
+# global
+shock_probas_g_cs_mec <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  filter(spans == "0.75") %>% 
+  dplyr::select(-spans) %>% 
+  dplyr::select(names(shock_probas_r_cs_mec))
+change_probas_g_cs_mec <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs_mec))
 
-list_countries_5 <- dat_points %>% 
-  group_by(regions, ssp) %>% 
-  filter(at_least_two_change_25<0.25 & at_least_two_shocks<0.25,
-         ssp == "SSP 5.85") %>% 
-  pull(regions)
+# rbind
+shock_probas <- rbind(shock_probas_g_cs_mec, shock_probas_r_cs_mec)
+long_term <- rbind(change_probas_g_cs_mec, change_probas_r_cs_mec) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat_mec <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
 
-# correlation between metrics under different SSPs
-cor(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 1.26"],
-    dat_points$at_least_two_change_25[dat_points$ssp=="SSP 1.26"],
-    method = "pearson")
-cor.test(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 1.26"],
-         dat_points$at_least_two_change_25[dat_points$ssp=="SSP 1.26"],
-         method = "pearson")
+# countries
+shock_probas_r_cs <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans)
+change_probas_r_cs <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+  dplyr::select(-spatial_scale)
 
-cor(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 5.85"],
-    dat_points$at_least_two_change_25[dat_points$ssp=="SSP 5.85"],
-    method = "pearson")
-cor.test(dat_points$at_least_two_shocks[dat_points$ssp=="SSP 5.85"],
-         dat_points$at_least_two_change_25[dat_points$ssp=="SSP 5.85"],
-         method = "pearson")
+# global
+shock_probas_g_cs <- read_csv("data/short-term_change/global_shocks_1985-2015_probas_spans.csv") %>% 
+  mutate(regions = "global") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(-spans) %>% 
+  dplyr::select(names(shock_probas_r_cs))
+change_probas_g_cs <- read_csv("data/long-term_change/global_long-term_change_1985-2015_probas.csv") %>% 
+  mutate(regions = "global") %>% 
+  dplyr::select(names(change_probas_r_cs))
 
-#### E. Figure 1 with range of metrics ----
-# data with average of climate models
-dat_points <- dat %>% 
-  mutate(ssp = ifelse(str_detect(climates, "ssp126"), "SSP 1.26", NA_character_),
-         ssp = ifelse(str_detect(climates, "ssp585"), "SSP 5.85", ssp),
-         climate_model = ifelse(str_detect(climates, "gfdl"), "GFDL-ESM4", NA_character_),
-         climate_model = ifelse(str_detect(climates, "ipsl"), "IPSL-CM6A-LR", climate_model)) %>% 
-  group_by(regions, ssp) %>% 
-  summarize(at_least_two_shocks = mean(at_least_two_shocks, na.rm=T),
-            at_least_two_change_25 = mean(at_least_two_change_25, na.rm=T))
+# rbind
+shock_probas <- rbind(shock_probas_g_cs, shock_probas_r_cs)
+long_term <- rbind(change_probas_g_cs, change_probas_r_cs) %>% 
+  pivot_wider(names_from = "type", values_from = "probas")
+dat <- left_join(long_term, shock_probas, by = c("climates", "regions", "time_window")) %>% 
+  filter(regions != "Antarctica")
 
-View(dat_points %>% 
-  group_by(ssp) %>% 
-  summarize(min(at_least_two_change_25),min(at_least_two_shocks),
-            max(at_least_two_change_25),max(at_least_two_shocks),
-            median(at_least_two_change_25),median(at_least_two_shocks)))
+dat_mec <- left_join(dat_mec, dat, by = c("regions","climates","time_window"))
 
-View(dat_points %>% 
-  filter(ssp == "SSP 5.85"))
-  
-# near certainty shocks
-dat_points %>% 
-  filter(ssp == "SSP 5.85",
-         at_least_two_shocks>0.9) %>% 
-  pull(regions)
+# ssp5.85
+dat_mec_ssp585 <- dat_mec %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585"),
+         time_window==30,
+         regions != "global") %>% 
+  group_by(regions) %>% 
+  summarize(at_least_one_25_up_down = mean(at_least_one_25_up_down, na.rm=T),
+            at_least_two_25_down = mean(at_least_two_25_down, na.rm=T),
+            at_least_one_shock_up_down = mean(at_least_one_shock_up_down, na.rm=T),
+            at_least_two_shocks_down = mean(at_least_two_shocks_down, na.rm=T),
+            at_least_two_change_25 = mean(at_least_two_change_25, na.rm = T),
+            at_least_two_shocks = mean(at_least_two_shocks, na.rm = T))
 
-# near safety shocks
-dat_points %>% 
-  filter(ssp == "SSP 5.85",
-         at_least_two_shocks<0.1) %>% 
-  pull(regions)
+nres_r_metrics <- left_join(nres_r, dat_mec_ssp585) %>% 
+  rename(`Gradual compensation` = at_least_one_25_up_down,
+         `Gradual synchrony` = at_least_two_25_down,
+         `Abrupt compensation` = at_least_one_shock_up_down,
+         `Abrupt synchrony` = at_least_two_shocks_down,
+         `Gradual change` = at_least_two_change_25,
+         `Abrupt change` = at_least_two_shocks) %>% 
+  pivot_longer(3:8, names_to = "metric", values_to = "value") %>% 
+  filter(metric %in% c("Gradual change","Abrupt change"))
 
-# near certainty gradual
-dat_points %>% 
-  filter(ssp == "SSP 5.85",
-         at_least_two_change_25>0.9) %>% 
-  pull(regions)
+png(paste0("figures/supplementary_figure_3.png"),
+    width = 8*200, height = 4*400, res = 200)
+ggplot(nres_r_metrics) +
+  geom_boxplot(aes(x = as.factor(n_res), y = value)) +
+  facet_wrap(~ factor(metric, 
+                      levels = c("Abrupt change","Gradual change"),
+                      labels = c("Probability of at least 1 year with at least 2 shocks",
+                                 "Probability of at least 2 res. changing by 25% or more")),
+             nrow = 2) +
+  theme_bw() +
+  ylab("Probability") +
+  xlab("Number of resources") +
+  theme(text = element_text(size = 22))
+dev.off()
 
-# near safety gradual
-dat_points %>% 
-  filter(ssp == "SSP 5.85",
-         at_least_two_change_25<0.1) %>% 
-  pull(regions)
-  
-# 0.75 for both
-dat_points %>% 
-  filter(ssp == "SSP 5.85",
-         at_least_two_shocks>0.75 & at_least_two_change_25>0.75) %>% 
-  pull(regions)
+
+#### F. supplemental figure 4 ----
+# link between p(X>=2) and p(X>=50%)
+
+## SHOCKS
+# load p(X>=2)
+shocks_two <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(regions, climates, at_least_two_shocks)
+
+# load p(X>=50%)
+shocks_half <- read_csv("data/short-term_change/countries_shocks_1985-2015_probas_spans_half.csv") %>% 
+  filter(spans == "shock_0.75") %>% 
+  dplyr::select(regions, climates, at_least_half_shocks, at_least_half_bis_shocks)
+
+# join the past and future shock probabilities
+shocks <- left_join(shocks_two, shocks_half, by = c("regions","climates")) %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "proba") %>% 
+  group_by(regions, type) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  pivot_wider(values_from = proba, names_from = type)
+
+shocks_map <- left_join(regions, shocks, by = c("SOVEREIGN1" = "regions")) %>% 
+  select(-at_least_half_shocks,-at_least_two_shocks) %>% 
+  rename(`p(X>=50%)` = at_least_half_bis_shocks) %>% 
+  pivot_longer(3, names_to = "type", values_to = "proba")
+
+png(paste0("figures/supplementary_figure_4_a.png"),
+    width = 8*200, height = 4*200, res = 200)
+shocks_map %>% 
+  ggplot() +
+  theme_bw() +
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = proba), alpha = 0.8) +
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks = c(0,0.5,1)) +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
+
+## GRADUAL
+# load p(X>=2)
+gradual_two <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas.csv") %>% 
+  filter(time_window == 30,
+         type == "at_least_two_change_25") %>% 
+  dplyr::select(regions, climates, type, probas) %>% 
+  pivot_wider(names_from = type, values_from = probas)
+
+# load p(X>=50%)
+gradual_half <- read_csv("data/long-term_change/countries_long-term_change_1985-2015_probas_half.csv") %>% 
+  filter(time_window == 30,
+         type %in% c("at_least_half_change_25","at_least_half_bis_change_25")) %>%
+  dplyr::select(regions, climates, type, probas) %>% 
+  pivot_wider(names_from = type, values_from = probas)
+
+# join the past and future shock probabilities
+gradual <- left_join(gradual_two, gradual_half, by = c("regions","climates")) %>% 
+  filter(climates %in% c("gfdl-esm4 ssp585","ipsl-cm6a-lr ssp585")) %>% 
+  pivot_longer(3:5, names_to = "type", values_to = "proba") %>% 
+  group_by(regions, type) %>% 
+  summarize(proba = median(proba, na.rm=T)) %>% 
+  pivot_wider(values_from = proba, names_from = type)
+
+# n_res
+gradual <- left_join(gradual, nres_r, by = "regions")
+
+# join the shapefile and data
+gradual_map <- left_join(regions, gradual, by = c("SOVEREIGN1" = "regions")) %>% 
+  rename(`p(X>=2)` = at_least_two_change_25,
+         `p(X>=50%)` = at_least_half_change_25,
+         `p(X>=50%)bis` = at_least_half_bis_change_25,
+         `# resources` = n_res) %>% 
+  pivot_longer(3:6, names_to = "type", values_to = "proba") %>% 
+  filter(type == "p(X>=50%)bis")
+
+# map
+png(paste0("figures/supplementary_figure_4_b.png"),
+    width = 8*200, height = 4*200, res = 200)
+gradual_map %>% 
+  ggplot() + 
+  theme_bw() +
+  geom_sf(data = world, fill = "white") + 
+  geom_sf(aes(fill = proba), alpha = 0.8) +
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks = c(0,0.5,1)) +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
