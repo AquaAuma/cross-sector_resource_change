@@ -7,3 +7,4 @@
 - **short-term_change**: processed data files for shocks
 - **observational_yield**: data file from Jägermeyr et al. (2021) needed to run **data_processing.R**
 - **crop_areas**: data file from Jägermeyr et al. (2021) needed to run **data_processing.R**
+- **data_processing**: time-series outputs from **data_processing.R**, not available because files are too big
