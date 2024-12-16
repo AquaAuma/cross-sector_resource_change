@@ -10,6 +10,8 @@ The following code files were applied to complete the data processing:
 
 -   **data_processing.R**: merging historical and future ISIMIP simulations, homogenize spatial and temporal resolutions, data aggregation from grid cells to global and country scales, time-series of relative resource change
 
+-   **get_nres.R**: extracting the number of resources per country
+
 -   **1.cross-sector_long-term.R**: calculate % difference resource change and probabilities of long-term change for p(X>=2)
 
 -   **1.bis.cross-sector_long-term.R**: calculate % difference resource change and probabilities of long-term change for p(X>=50%)
@@ -20,21 +22,13 @@ The following code files were applied to complete the data processing:
 
 ### Manuscript analyses and figures
 
--   **figure_1.R**: code to reproduce figure 1 plotting short-term and long-term country exposure across climate experiments
+-   **figure_1.R**: code to reproduce revised figure 1 showing maps of cross-sector change and number of resource per country and related supplementary figures
 
--   **figure_1_revised.R**: code to reproduce revised figure 1 showing maps of cross-sector change and number of resource per country
+-   **figure_2.R**: code to reproduce revised figure 2 with shock versus gradual change plotted with labelled countries for ssp 5.85 and per ssp and related supplementary figures
 
--   **figure_2.R**: code to reproduce figure 2 with maps of change, synchrony, and compensation for ssp 5.85 and alternative figure for ssp 1.26
+-   **figure_3.R**: code to reproduce revised figure 3 on maps of synchrony and compensation for ssp 5.85 and related supplementary figures
 
--   **figure_2_revised.R**: code to reproduce revised figure 2 with shock versus gradual change plotted with labelled countries for ssp 5.85 and per ssp
-
--   **figure_3.R**: code to reproduce figure 3 on country rankings for ssp 5.85, alternative figure for ssp 1.26, and descriptive statistics
-
--   **figure_3_revised.R**: code to reproduce revised figure 3 on maps of synchrony and compensation for ssp 5.85
-
--   **figure_4.R**: code to reproduce figure 4 on country-to-RTA ratios for ssp 5.85, alternative figure for ssp 1.26, alternative figure with maps, and descriptive statistics
-
--   **figure_4_revised.R**: code to reproduce revised figure 4 country rankings with number of resources colored
+-   **figure_4.R**: code to reproduce revised figure 4 country rankings stratified by the number of resources per country
 
 -   **figure_5.R**: code to reproduce figure 5 on the RTA analysis
 
