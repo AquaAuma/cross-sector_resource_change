@@ -1,4 +1,4 @@
-#### Figure 1 and alternative versions
+#### Figure 2 
 #### Coding: Aurore A. Maureaud, December 2024
 
 rm(list = ls())
@@ -76,8 +76,8 @@ png(paste0("figures/figure_2a.png"),
 ggplot(dat, aes(x = factor(type, levels = c("shock","gradual"), labels = c("shock","gradual")), y = proba, pattern = ssp)) +
   geom_boxplot_pattern(position = position_dodge(width = 0.8),
                        aes(pattern = ssp), pattern_fill = "black",
-                       pattern_density = 0.05, pattern_angle = 45,
-                       pattern_spacing = 0.03, width = 0.6) +
+                       pattern_density = 0.025, pattern_angle = 45,
+                       pattern_spacing = 0.01, width = 0.6) +
   scale_pattern_manual(values = c("none", "stripe")) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
@@ -112,7 +112,7 @@ ggplot(dat_points, aes(y = gradual, x = shock)) +
         panel.grid.major = element_blank(),
         text = element_text(size = 18)) +
   scale_x_continuous(expand=c(0.01,0.01)) + scale_y_continuous(expand=c(0.02,0.02)) +
-  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 2 shocks") +
+  ylab("Probability of at least 2 res. changing by >25%") + xlab("Probability of at least 1 year with at least 2 shocks") +
   geom_text_repel(data = dat_points[dat_points$shock>0.75 & dat_points$gradual>0.75,],
                    aes(label = regions), size=5, max.overlaps=30)
   # geom_text(data = dat_points[dat_points$shock>0.75 & dat_points$gradual>0.75,],
