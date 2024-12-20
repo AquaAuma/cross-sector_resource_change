@@ -27,9 +27,9 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 
 -   **data/data_processing**: processed data files by sector and aggregation scale
 
--   **data/long-term_change**: probabilities data files by aggregation scale and metric type
+-   **data/long-term_change**: probabilities data files by aggregation scale and metric type, time-series files will be made available at a later stage
 
--   **data/short-term_change**: probabilities data files by aggregation scale and metric type
+-   **data/short-term_change**: probabilities data files by aggregation scale and metric type, time-series files will be made available at a later stage
 
 ## R packages used
 
