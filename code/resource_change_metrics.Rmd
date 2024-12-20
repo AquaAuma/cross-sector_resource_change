@@ -23,12 +23,12 @@ library(ggplot2)
 library(gridExtra)
 
 # load functions
-source("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/functions/get_probas.R")
+source("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/functions/get_probas.R")
 
 # load data
-pct_diff_ts_r_cs_ag <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
-pct_diff_ts_r_cs_fi <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
-pct_diff_ts_r_cs_wa <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
+pct_diff_ts_r_cs_ag <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_agriculture.csv")
+pct_diff_ts_r_cs_fi <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/data_processing/countries_time-series_1985-2015_2070-2099_marine-fishery_global.csv")
+pct_diff_ts_r_cs_wa <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/data_processing/countries_time_series_1985-2015_2070-2099_water_global.csv")
 ts <- rbind(pct_diff_ts_r_cs_ag, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_wa) %>% 
   mutate(id = paste(sector, eco_model, climate_model, experiment_climate, output_variable, regions, sep = "/"))
 rm(pct_diff_ts_r_cs_wa, pct_diff_ts_r_cs_fi, pct_diff_ts_r_cs_ag)
@@ -255,7 +255,7 @@ y <- ts %>%
          threshold = ifelse(str_detect(type, "25")==TRUE, "25", threshold),
          threshold = ifelse(str_detect(type, "pct")==TRUE, "pct", threshold))
   
-s <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+s <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
   filter(spans == "shock_0.75") %>% 
   pivot_longer(4:6, names_to = "type", values_to = "probas") %>% 
   mutate(spatial_scale = "regions",
@@ -307,3 +307,26 @@ zz %>%
   geom_smooth(stats="loess") +
   geom_abline(aes(intercept=0, slope=1), linetype="dashed")
 ```
+
+```{r supplementary figure 5, warning=FALSE, message=FALSE, fig.width=7, fig.height = 3}
+
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_5.png"),
+    width = 10*200, height = 6*200, res = 200)
+
+yy %>% 
+  filter(n_res == "2") %>% 
+  ggplot() +
+  geom_boxplot(aes(x = threshold, y = probas, fill = climates), outlier.alpha = 0.5) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = -45, hjust=0),
+        text = element_text(size=22)) +
+  scale_fill_manual(values = c("plum","purple4","lightskyblue","blue"),
+                    name = "Climate models/scenarios") +
+  scale_x_discrete(limits = c("5","10","25","pct","shock"),
+                   labels = c("fixed 5% threshold","fixed 10% threshold","fixed 25% threshold","10th percentile threshold","shocks")) +
+  xlab("Cross-sector metric") + ylab("p(X>=2)")
+
+dev.off()
+
+```
+

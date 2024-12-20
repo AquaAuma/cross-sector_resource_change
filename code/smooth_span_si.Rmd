@@ -29,12 +29,12 @@ library(GGally)
 Testing the sensitivity of the shock probabilities to the smoother span selected to count shocks. Spans are tested from 0.25 to 0.75.
 
 ```{r, warning=FALSE, message=FALSE, fig.height=7, fig.width=9}
-shock_probas_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
+shock_probas_r_cs_mec <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv") %>% 
   dplyr::select(-at_least_three_shocks_up, -at_least_two_shocks_up, -time_window,
                 -at_least_three_shocks_down, -at_least_one_shock_up) %>% 
   mutate(spans = as.character(spans))
 
-shock_probas_r_cs <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+shock_probas_r_cs <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
   dplyr::select(-time_window)%>% 
   mutate(spans = ifelse(str_detect(spans, "0.25"), "0.25", spans),
          spans = ifelse(str_detect(spans, "0.5"), "0.5", spans),
@@ -54,4 +54,18 @@ ggplot(spans_dat, aes(y = `0.25`, x = `0.75`)) + geom_point(alpha = 0.5) +
 
 ggpairs(spans_dat, columns = c(4:6), aes(colour = type)) +
   theme_bw() + theme(text = element_text(size = 16)) + theme_bw()
+```
+
+Save supplementary figure
+
+```{r supplementary figure 10, warning=FALSE, message=FALSE, fig.height=7, fig.width=9}
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_10.png"),
+    width = 10*200, height = 6*250, res = 200)
+spans_dat %>% 
+  mutate(label = ifelse(type == "at_least_two_shocks_down","p(synchronous shocks)",NA_character_),
+         label = ifelse(type == "at_least_one_shock_up_down","p(compensatory shocks)",label),
+         label=ifelse(type == "at_least_two_shocks","p(shocks)",label)) %>% 
+  ggpairs(columns = c(4:6), aes(colour = label, alpha = 0.75)) +
+  theme_bw() + theme(text = element_text(size = 18)) + theme_bw()
+dev.off()
 ```

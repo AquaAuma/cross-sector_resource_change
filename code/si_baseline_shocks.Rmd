@@ -22,17 +22,21 @@ library(gridExtra)
 library(sf)
 library(colorspace)
 library(ggpubr)
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # load functions
-source("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/functions/get_probas.R")
+source("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/functions/get_probas.R")
 
 # load future shock probabilities
-f_shocks <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
+f_shocks <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans.csv") %>% 
   dplyr::select(regions, climates, spans, at_least_two_shocks) %>% 
   rename(pshocks_f = at_least_two_shocks)
 
 # calculate past shock probabilities
-xx <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv")%>% 
+xx <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_time_series_1985-2015_spans.csv") %>% 
   filter(!output_variable %in% c("tws","tcb","ptotww")) %>%
   mutate(climates = paste(climate_model, experiment_climate)) %>%
   group_by(regions, climates, years, output_variable) %>% 
@@ -93,7 +97,7 @@ shocks <- left_join(f_shocks, p_shocks, by = c("regions","climates","spans")) %>
 rm(span, spans, s, xx)
 
 # load regions shapefile
-regions <- st_read("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
+regions <- st_read("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp") %>% 
   filter(POL_TYPE != "Joint regime (EEZ)",
          is.na(SOVEREIGN2),
          SOVEREIGN1 != "Republic of Mauritius",
@@ -182,3 +186,46 @@ ggplot(shocks, aes(x = pshocks_p, y = pshocks_f)) + geom_point() +
   geom_abline(intercept = 0, slope = 1, lwd=1, linetype = "dashed",
               col = "red")
 ```
+
+Save figure for the manuscript
+
+```{r supplementary figure 6, echo=FALSE, warning=FALSE, message=FALSE}
+
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_6a.png"),
+    width = 10*200, height = 6*200, res = 200)
+ggplot() + 
+  geom_sf(data = world, fill = "white") +
+  theme_bw() +
+  geom_sf(data = shocks_map, aes(fill = pshocks_p), alpha = 0.8) +
+  scale_fill_continuous_sequential(palette = "PuBuGn",
+                                   begin = 0, end = 1,
+                                   limits=c(0,1),
+                                   breaks = c(0,0.5,1)) +
+  coord_sf(ylim = c(-80, 90), xlim = c(-180, 180), expand = FALSE) +
+  theme(legend.position = c(.15, .15),
+        legend.direction="horizontal",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(color = "white", fill = "white"),
+        panel.spacing = unit(0.5,'lines'),
+        legend.key.size = unit(0.75, 'cm'),
+        legend.background=element_blank(),
+        text = element_text(size = 22))
+dev.off()
+
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_6b.png"),
+    width = 10*200, height = 6*200, res = 200)
+ggplot(shocks, aes(x = pshocks_p, y = pshocks_f)) + geom_point(expand=F) +
+  stat_smooth(method = "lm", col = "black") +
+  theme_bw() +
+  xlab("Probability 1 year with 2 shocks+ 1985-2015") +
+  ylab("Probability 1 year with 2 shocks+ 2070-2100") +
+  geom_abline(intercept = 0, slope = 1, lwd=1, linetype = "dashed",
+              col = "red") +
+  theme(text = element_text(size = 20)) +
+  xlim(0,1) + ylim(0,1)
+dev.off()
+
+```
+

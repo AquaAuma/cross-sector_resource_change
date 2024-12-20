@@ -22,6 +22,7 @@ library(tidyverse)
 library(ggplot2)
 library(gridExtra)
 library(GGally)
+library(ggpubr)
 ```
 
 # Check for probability independence
@@ -32,7 +33,7 @@ The compensation probabilities rely on the product between probability of at lea
 
 ```{r, warning=FALSE, message=FALSE}
 
-shock_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv")
+shock_proba_r_cs_mec <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/short-term_change/countries_shocks_1985-2015_probas_spans_mechanisms.csv")
 
 ggplot(shock_proba_r_cs_mec, aes(x = at_least_two_shocks_up, y = at_least_two_shocks_down, colour = as.factor(spans))) +
   geom_point(alpha = 0.5) +
@@ -62,7 +63,7 @@ ggpairs(shock_proba_r_cs_mec, columns = c(5,11), aes(colour = climates)) +
 
 ```{r, warning=FALSE, message=FALSE}
 
-change_proba_r_cs_mec <- read_csv("/Users/auroremaureaud/Library/CloudStorage/Dropbox/Minerva 2021 Climate Politics/Aurore/Resource synthesis/future_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
+change_proba_r_cs_mec <- read_csv("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/data/long-term_change/countries_long-term_change_1985-2015_probas_mechanisms.csv") %>% 
   filter(time_window == 30,
          str_detect(type, "25")==TRUE,
          str_detect(type, "up_down")==FALSE,
@@ -91,4 +92,71 @@ ggpairs(change_proba_r_cs_mec, columns = c(5,7), aes(colour = climates)) +
 ggpairs(change_proba_r_cs_mec, columns = c(6,8), aes(colour = climates)) +
   theme_bw() + theme(text = element_text(size = 16)) +
   ggtitle("Correlation p(3 increases) and p(3 decreases)")
+```
+Saving supplementary figures
+
+```{r supplementary figure 11, warning=FALSE, message=FALSE}
+
+two_shocks <- shock_proba_r_cs_mec %>% 
+  filter(spans == "0.75") %>% 
+  ggplot(aes(x = at_least_two_shocks_up, y = at_least_two_shocks_down, color = climates)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 12)) +
+    scale_color_manual(values = c("plum","purple4","lightskyblue","blue"),
+                    name = "Climate models and scenarios") +
+  xlab("proba. 2 increasing shocks") +
+  ylab("proba. 2 decreasing shocks")
+
+three_shocks <- shock_proba_r_cs_mec %>% 
+  filter(spans == "0.75") %>% 
+  ggplot(aes(x = at_least_three_shocks_up, y = at_least_three_shocks_down, colour=climates)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 12)) +
+    scale_color_manual(values = c("plum","purple4","lightskyblue","blue"),
+                    name = "Climate models and scenarios") +
+  xlab("proba. 3 increasing shocks") +
+  ylab("proba. 3 decreasing shocks")
+
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_11.png"), width = 10*175, height = 6*200, res = 200)
+ggarrange(two_shocks, three_shocks, nrow = 2,
+          labels = c("A","B"))
+dev.off()
+
+```
+
+
+```{r supplementary figure 12, warning=FALSE, message=FALSE}
+two_res <- ggplot(change_proba_r_cs_mec, aes(x = at_least_two_25_up, y = at_least_two_25_down, color = climates)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  xlim(0,1) + ylim(0,1) +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 12)) +
+  theme(text = element_text(size = 12)) +
+    scale_color_manual(values = c("plum","purple4","lightskyblue","blue"),
+                    name = "Climate models and scenarios") +
+  xlab("proba. 2 increasing res.") +
+  ylab("proba. 3 decreasing res.")
+
+three_res <- ggplot(change_proba_r_cs_mec, aes(x = at_least_three_25_up, y = at_least_three_25_down, color = climates)) +
+  geom_point(alpha = 0.5) +
+  theme_bw() +
+  xlim(0,1) + ylim(0,1) +
+  geom_abline(aes(intercept = 0, slope = 1)) +
+  theme(text = element_text(size = 12)) +
+    theme(text = element_text(size = 12)) +
+    scale_color_manual(values = c("plum","purple4","lightskyblue","blue"),
+                    name = "Climate models and scenarios") +
+  xlab("proba. 3 increasing res.") +
+  ylab("proba. 3 decreasing res.")
+
+png(paste0("/Users/aurore.maureaud/Documents/GitHub/cross-sector_resource_change/figures/supplementary_figure_12.png"), width = 10*175, height = 6*200, res = 200)
+ggarrange(two_res, three_res, nrow = 2,
+          labels = c("A","B"))
+dev.off()
+
 ```
