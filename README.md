@@ -1,5 +1,7 @@
 # national exposure to cross-sector climate impacts
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14534829.svg)](https://doi.org/10.5281/zenodo.14534829)
+
 Code and analysis on short-term and long-term exposure to climate change across sectors of fisheries, water, and agriculture related to the following manuscript: 
 Maureaud A., Ramsay K., Kasptein E., Blanchard J., Gosling S., Jägermeyr J., Sandall E., Randrianarisoa N., Eddy T., Petrik C., Schewe J., Pinsky M. *Sudden and gradual climate impacts threaten global food systems in a world connected by trade*
 
