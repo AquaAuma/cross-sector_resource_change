@@ -41,10 +41,8 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 
 ## R and R package versions
 
-- R software version XX
-- R packages and versions: sf (), dplyr (), tidyverse (), raster (), exactextractr (), readxl (), ncfd4 (), ggplot2 (), abind (), here (),
-gridExtra (), ggrepel (), colorspace (), rnaturalearth (), rnaturalearthdata (), ggpubr (), ggExtra (),
-ggpattern (), RColorBrewer (), pracma (), zoo ()
+- R software version 4.4.2
+- R packages and versions: sf (1.0.19), dplyr (1.1.4), tidyverse (2.0.0), raster (3.6.30), exactextractr (0.10.0), readxl (1.4.3), ncfd4 (1.23), ggplot2 (3.5.1), abind (1.4.8), here (1.0.1), gridExtra (2.3), ggrepel (0.9.6), colorspace (2.1.1), rnaturalearth (1.0.1), rnaturalearthdata (1.0.0), ggpubr (0.6.0), ggExtra (0.10.1), ggpattern (1.1.1), RColorBrewer (1.1.3), pracma (2.4.4), zoo (1.8.12)
 
 ## Contributions
 
