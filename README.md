@@ -35,13 +35,14 @@ This project is a product of the Minerva grant ["Climate Change and Great Power 
 
 ## Install and run times
 
-- Github repository run time: a few minutes
+- Github repository run time: <5 minutes
 - Post-data processing run time: about 10 minutes
+- Method demo run time (.Rmd files in **code/**): <5 minutes
 
 ## R and R package versions
 
 - R software version XX
-- R packages and verisons: sf (), dplyr (), tidyverse (), raster (), exactextractr (), readxl (), ncfd4 (), ggplot2 (), abind (), here (),
+- R packages and versions: sf (), dplyr (), tidyverse (), raster (), exactextractr (), readxl (), ncfd4 (), ggplot2 (), abind (), here (),
 gridExtra (), ggrepel (), colorspace (), rnaturalearth (), rnaturalearthdata (), ggpubr (), ggExtra (),
 ggpattern (), RColorBrewer (), pracma (), zoo ()
 
